@@ -26,6 +26,6 @@ fun Context.startMainMenuActivity() =
 
 fun Context.startProjectAddActivity() =
     Intent(this, ProjectAddActivity::class.java).also {//MainMenuActivity
-        it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(it)
     }

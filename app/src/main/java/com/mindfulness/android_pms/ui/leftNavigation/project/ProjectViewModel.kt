@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.data.firebase.FirebaseSource
 import com.mindfulness.android_pms.data.repositories.ProjectRepository
 import java.util.ArrayList
@@ -28,7 +29,7 @@ class ProjectViewModel(
         var db: FirebaseFirestore = FirebaseFirestore.getInstance()
         //projectStr.clear()
 
-        db.collection("Project")//.whereEqualTo("createUserId", firebaseAuth.uid)
+        db.collection("Project").orderBy("projectCreateDate",Query.Direction.DESCENDING)//.whereEqualTo("createUserId", firebaseAuth.uid)
             .addSnapshotListener { snapshot, exception ->
                 if (exception != null) {
                     projectStr.add("Error")

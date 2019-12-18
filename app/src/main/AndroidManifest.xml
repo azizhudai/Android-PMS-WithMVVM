@@ -25,7 +25,7 @@
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.mindfulness.android_pms.ui.main_menu.MainMenuActivity" />
+                android:value="com.mindfulness.android_pms.ui.main.MainActivity" />
         </activity>
         <activity android:name=".ui.main_menu.MainMenuActivity" />
         <activity android:name=".ui.home.HomeActivity" />
