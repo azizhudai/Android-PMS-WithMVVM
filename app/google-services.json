@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "434724792200",
+    "firebase_url": "https://project-management-syste-52b1a.firebaseio.com",
+    "project_id": "project-management-syste-52b1a",
+    "storage_bucket": "project-management-syste-52b1a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:434724792200:android:0d28fc06b213969cb47c3d",
+        "android_client_info": {
+          "package_name": "com.mindfulness.android_pms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "434724792200-bspl0nukcnbv7b5lphqqki77d1v865n2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbV0c9MUqzKjwHRI1KML8O5Dp1hQWR8yU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "434724792200-bspl0nukcnbv7b5lphqqki77d1v865n2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:434724792200:android:1131b029051c3916b47c3d",
+        "android_client_info": {
+          "package_name": "com.pms.pms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "434724792200-bspl0nukcnbv7b5lphqqki77d1v865n2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbV0c9MUqzKjwHRI1KML8O5Dp1hQWR8yU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "434724792200-bspl0nukcnbv7b5lphqqki77d1v865n2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
