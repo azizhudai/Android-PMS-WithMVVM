@@ -7,10 +7,15 @@
 
     android:id="@+id/card_view"
     android:layout_margin="5dp"
-    card_view:cardBackgroundColor="#81C784"
     card_view:cardCornerRadius="12dp"
-    card_view:cardElevation="3dp"
+    card_view:cardElevation="4dp"
+    android:outlineAmbientShadowColor="@color/common_google_signin_btn_text_light"
     card_view:contentPadding="4dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/activity_horizontal_margin">
 
     <TextView
         android:id="@+id/rv_project_name_text"
@@ -20,4 +25,16 @@
         android:paddingTop="5dp"
         android:text="TextView"
         android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/textViewOptions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:text="&#8942;"
+        android:textAppearance="?android:textAppearanceLarge" />
+
+    </RelativeLayout>
 </androidx.cardview.widget.CardView>

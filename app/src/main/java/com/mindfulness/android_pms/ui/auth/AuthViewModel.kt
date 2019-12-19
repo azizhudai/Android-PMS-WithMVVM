@@ -57,7 +57,10 @@ class AuthViewModel(
                 //sending a success callback
                 try {
                     authListener?.onSuccess()
-                }catch (e:Exception) {
+                }catch (e:Exception){
+                    authListener?.onFailure("Başarısız!")
+                }
+                finally {
                     authListener?.onFailure("Başarısız!")
                 }
 

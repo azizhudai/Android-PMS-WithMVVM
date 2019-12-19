@@ -1,6 +1,8 @@
 package com.mindfulness.android_pms.ui.leftNavigation.project
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +18,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mindfulness.android_pms.R
 import com.mindfulness.android_pms.data.pojo.Project
+import com.mindfulness.android_pms.ui.leftNavigation.project.event.ProjectAddActivity
+import com.mindfulness.android_pms.utils.startProjectAddActivity
 
 
 class ProjectFragment : Fragment() {
@@ -39,10 +43,10 @@ class ProjectFragment : Fragment() {
 
 
         // val textView: TextView = root.findViewById(R.id.text_home)
-       /* projectViewModel.text.observe(viewLifecycleOwner, Observer {
-            textView.text = it
-        })
-*/
+        /* projectViewModel.text.observe(viewLifecycleOwner, Observer {
+             textView.text = it
+         })
+ */
         //// recyclerview
 
         val rv_project: RecyclerView = root.findViewById(R.id.rv_project)
@@ -55,18 +59,24 @@ class ProjectFragment : Fragment() {
 
 ////
         projectViewModel.projectList.observe(viewLifecycleOwner, Observer {
-            adapter = ProjectRecyclerAdapter(it)
+            adapter = activity?.let { it1 -> ProjectRecyclerAdapter(it, it1) }
             rv_project.adapter = adapter
             adapter!!.notifyDataSetChanged()
+
+            adapter!!.editClickStatus.observe(viewLifecycleOwner, Observer {
+                if(it.get("statu") == true){
+                    Log.e("ddd","deneme "+it.get("pid"))
+                    Intent(activity, ProjectAddActivity::class.java).also {itt->//MainMenuActivity
+                        //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(itt)
+                    }
+                }
+            })
+
         })
 
 
-
-
-
-       // projectNameArray.addAll(projectViewModel._projectList)
-
-
+        // projectNameArray.addAll(projectViewModel._projectList)
 
 
         /*.observe(viewLifecycleOwner, Observer {

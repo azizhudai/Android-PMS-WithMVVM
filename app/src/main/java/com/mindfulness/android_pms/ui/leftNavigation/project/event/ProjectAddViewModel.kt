@@ -1,6 +1,7 @@
 package com.mindfulness.android_pms.ui.leftNavigation.project.event
 
 import android.app.DatePickerDialog
+import android.os.SystemClock
 import android.widget.DatePicker
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -10,9 +11,9 @@ import com.mindfulness.android_pms.ui.auth.AuthListener
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 class ProjectAddViewModel(
     private val repository: ProjectRepository
@@ -45,7 +46,16 @@ class ProjectAddViewModel(
     //disposable to dispose the Completable
     private val disposables = CompositeDisposable()
 
+    // variable to track event time
+    private var mLastClickTime: Long = 0
     fun insertClick() {
+
+        // Preventing multiple clicks, using threshold of 1 second
+        if (SystemClock.elapsedRealtime() - mLastClickTime < 1500) {
+            return
+        }
+        mLastClickTime = SystemClock.elapsedRealtime()
+
         //validating email and password
         if (title.isNullOrEmpty()) {
             authListener?.onFailure("Invalid Title")
@@ -55,7 +65,15 @@ class ProjectAddViewModel(
         //insert started
         authListener?.onStarted()
 
-        project = Project("", title!!, projectDetail,startDateLiveData.value,endDateLiveData.value,Calendar.getInstance().time.toString(),"")
+        project = Project(
+            "",
+            title!!,
+            projectDetail,
+            startDateLiveData.value,
+            endDateLiveData.value,
+            Calendar.getInstance().time.toString(),
+            ""
+        )
         //calling login from repository to perform the actual inserteion
         val disposable = repository.projectInsert(project!!)
             .subscribeOn(Schedulers.io())
@@ -64,9 +82,12 @@ class ProjectAddViewModel(
                 //sending a success callback
                 try {
                     authListener?.onSuccess()
-                } catch (e: Exception) {
+                }catch (e:Exception){
                     authListener?.onFailure("Başarısız!")
                 }
+                /*finally {
+                    authListener?.onFailure("Başarısız!")
+                }*/
 
             }, {
                 //sending a failure callback
@@ -270,12 +291,13 @@ class ProjectAddViewModel(
         // gün kontrolü
         if (startMonth == monthOfYear && startYear == year && startDay > dayOfMonth) {
             isSetEndDate = false
-            endStatusLiveData.value ="Bitirme günü Başlama gününden küçük olamaz: ${startDay} >= ${dayOfMonth}"
-           /* Toast.makeText(
-                this@ProjectAddActivity,
-                "Bitirme günü Başlama gününden küçük olamaz: ${startDay} >= ${dayOfMonth}",
-                Toast.LENGTH_SHORT
-            ).show()*/
+            endStatusLiveData.value =
+                "Bitirme günü Başlama gününden küçük olamaz: ${startDay} >= ${dayOfMonth}"
+            /* Toast.makeText(
+                 this@ProjectAddActivity,
+                 "Bitirme günü Başlama gününden küçük olamaz: ${startDay} >= ${dayOfMonth}",
+                 Toast.LENGTH_SHORT
+             ).show()*/
 
 
         }
