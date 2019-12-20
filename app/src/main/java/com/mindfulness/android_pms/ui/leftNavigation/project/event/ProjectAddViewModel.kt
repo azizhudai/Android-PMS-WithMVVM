@@ -3,8 +3,11 @@ package com.mindfulness.android_pms.ui.leftNavigation.project.event
 import android.app.DatePickerDialog
 import android.os.SystemClock
 import android.widget.DatePicker
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.data.pojo.Project
 import com.mindfulness.android_pms.data.repositories.ProjectRepository
 import com.mindfulness.android_pms.ui.auth.AuthListener
@@ -48,6 +51,7 @@ class ProjectAddViewModel(
 
     // variable to track event time
     private var mLastClickTime: Long = 0
+
     fun insertClick() {
 
         // Preventing multiple clicks, using threshold of 1 second
@@ -82,7 +86,7 @@ class ProjectAddViewModel(
                 //sending a success callback
                 try {
                     authListener?.onSuccess()
-                }catch (e:Exception){
+                } catch (e: Exception) {
                     authListener?.onFailure("Başarısız!")
                 }
                 /*finally {
@@ -313,5 +317,71 @@ class ProjectAddViewModel(
         super.onCleared()
         disposables.dispose()
     }
+
+    val _getProjectFields = MutableLiveData<Project>().apply {
+
+        //var projectStr: ArrayList<Project> = ArrayList()
+        var db: FirebaseFirestore = FirebaseFirestore.getInstance()
+        var project: MutableLiveData<Project?> = MutableLiveData()
+
+        db.collection("Project").get() //.whereEqualTo("projectId", pid)
+            .addOnSuccessListener { documents ->
+
+                if (documents != null) {
+
+                    var i = 0
+                    for (document in documents) {
+                        //  projectStr.add(1,pro)
+                        value = Project(
+                            document.get("projectId") as String,
+                            document.get("projectName") as String,
+                            document.get("projectDetail") as String?,
+                            document.get("projectStartDate") as String?,
+                            document.get("projectEndDate") as String?,
+                            document.get("projectCreateDate") as String,
+                            ""
+                        )
+
+                        i++
+                    }
+
+                }
+
+            }
+    }
+
+    fun deneme(pid:String):MutableLiveData<Project?>{
+        var db: FirebaseFirestore = FirebaseFirestore.getInstance()
+        var project: MutableLiveData<Project?> = MutableLiveData()
+
+        db.collection("Project").whereEqualTo("projectId", pid).get()
+            .addOnSuccessListener { documents ->
+
+                if (documents != null) {
+
+                    var i = 0
+                    for (document in documents) {
+                        //  projectStr.add(1,pro)
+                        project.value = Project(
+                            document.get("projectId") as String,
+                            document.get("projectName") as String,
+                            document.get("projectDetail") as String?,
+                            document.get("projectStartDate") as String?,
+                            document.get("projectEndDate") as String?,
+                            document.get("projectCreateDate") as String,
+                            ""
+                        )
+
+                        i++
+                    }
+
+                }
+
+            }
+        return project
+    }
+
+//val projectOne: LiveData<ArrayList<Project>> = _project
+
 
 }

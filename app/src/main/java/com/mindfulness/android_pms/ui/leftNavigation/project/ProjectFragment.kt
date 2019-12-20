@@ -1,5 +1,7 @@
 package com.mindfulness.android_pms.ui.leftNavigation.project
 
+import android.app.AlertDialog
+import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -64,12 +66,67 @@ class ProjectFragment : Fragment() {
             adapter!!.notifyDataSetChanged()
 
             adapter!!.editClickStatus.observe(viewLifecycleOwner, Observer {
-                if(it.get("statu") == true){
-                    Log.e("ddd","deneme "+it.get("pid"))
-                    Intent(activity, ProjectAddActivity::class.java).also {itt->//MainMenuActivity
+                if (it.get("statu") == true) {
+                    Log.e("ddd", "deneme " + it.get("pid"))
+                    Intent(activity, ProjectAddActivity::class.java).also { itt ->
+                        //MainMenuActivity
                         //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        itt.putExtra("pid",  it.get("pid") as String)
                         startActivity(itt)
                     }
+                }
+            })
+
+            adapter!!.deleteClickStatus.observe(viewLifecycleOwner, Observer {
+                if (it.get("statu") == true) {
+
+                    val builder = AlertDialog.Builder(activity)
+                    //set title for alert dialog
+                    builder.setTitle(R.string.dialogTitle)
+                    //set message for alert dialog
+                    var message = it.get("pname") as String
+                    builder.setMessage(message)
+                    builder.setIcon(android.R.drawable.ic_dialog_alert)
+
+                    //performing positive action
+                    builder.setPositiveButton("Yes") { dialogInterface, which ->
+                        Toast.makeText(activity, "clicked yes", Toast.LENGTH_LONG).show()
+
+                        var position = it.get("position") as Int
+                        var db: FirebaseFirestore = FirebaseFirestore.getInstance()
+                        db.collection("Project").document(it.get("pid") as String)
+                            .delete()
+                            .addOnSuccessListener {
+
+                                adapter!!.removeItem(position)
+
+                                Log.d(
+                                    TAG,
+                                    "DocumentSnapshot successfully deleted!"
+                                )
+                            }
+                            .addOnFailureListener { e -> Log.w(TAG, "Error deleting document", e) }
+
+                    }
+                    //performing cancel action
+                    builder.setNeutralButton("Cancel") { dialogInterface, which ->
+                        Toast.makeText(
+                            activity,
+                            "clicked cancel\n operation cancel",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    //performing negative action
+                    builder.setNegativeButton("No") { dialogInterface, which ->
+                        Toast.makeText(activity, "clicked No", Toast.LENGTH_LONG).show()
+                    }
+                    // Create the AlertDialog
+                    val alertDialog: AlertDialog = builder.create()
+                    // Set other dialog properties
+                    alertDialog.setCancelable(false)
+                    alertDialog.show()
+
+
                 }
             })
 

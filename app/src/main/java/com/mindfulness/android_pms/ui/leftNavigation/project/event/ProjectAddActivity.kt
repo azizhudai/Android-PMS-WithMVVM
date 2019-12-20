@@ -1,6 +1,7 @@
 package com.mindfulness.android_pms.ui.leftNavigation.project.event
 
 import android.app.DatePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -40,6 +41,24 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
 
         viewModel.authListener = this
 
+        //get intent values
+        var intent1: Intent
+        intent1 = getIntent()
+        var pid: String? = intent1.getStringExtra("pid")
+        if (pid == null) {
+            println("pid is empty." + pid)
+        } else {
+            println("pid: " + pid)
+            viewModel.deneme(pid).observe(this, Observer { project ->
+                if (project != null) {
+                    et_projectTitle.setText(project.projectName)
+                    ed_projectDetail.setText(project.projectDetail)
+                    tv_ProjectStartDate.text = project.projectStartDate.let { "Start Date" }
+                    tv_ProjectEndDate.text = project.projectEndDate.let { "End Date" }
+                }
+            })
+        }
+
         viewModel.startDateLiveData.observe(this, Observer {
             tv_ProjectStartDate.text = it
         })
@@ -63,44 +82,44 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
             ).show()
         })
 
-}
+    }
 
-fun projectStartDateClick(view: View) {
+    fun projectStartDateClick(view: View) {
 
- DatePickerDialog(
-     this,
-     viewModel.startDateSetListener,
-     // set DatePickerDialog to point to today's date when it loads up
-     viewModel.calStart.get(Calendar.YEAR),
-     viewModel.calStart.get(Calendar.MONTH),
-     viewModel.calStart.get(Calendar.DAY_OF_MONTH)
- ).show()
-}
+        DatePickerDialog(
+            this,
+            viewModel.startDateSetListener,
+            // set DatePickerDialog to point to today's date when it loads up
+            viewModel.calStart.get(Calendar.YEAR),
+            viewModel.calStart.get(Calendar.MONTH),
+            viewModel.calStart.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
 
-fun projectEndDateClick(view: View) {
+    fun projectEndDateClick(view: View) {
 
- DatePickerDialog(
-     this,
-     viewModel.endDateSetListener,
-     // set DatePickerDialog to point to today's date when it loads up
-     viewModel.calEnd.get(Calendar.YEAR),
-     viewModel.calEnd.get(Calendar.MONTH),
-     viewModel.calEnd.get(Calendar.DAY_OF_MONTH)
- ).show()
-}
+        DatePickerDialog(
+            this,
+            viewModel.endDateSetListener,
+            // set DatePickerDialog to point to today's date when it loads up
+            viewModel.calEnd.get(Calendar.YEAR),
+            viewModel.calEnd.get(Calendar.MONTH),
+            viewModel.calEnd.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
 
-override fun onStarted() {
- Toast.makeText(this@ProjectAddActivity, "Kayıt İşlemi Başladı.", Toast.LENGTH_LONG).show()
-}
+    override fun onStarted() {
+        Toast.makeText(this@ProjectAddActivity, "Kayıt İşlemi Başladı.", Toast.LENGTH_LONG).show()
+    }
 
-override fun onSuccess() {
- Toast.makeText(this@ProjectAddActivity, "Başarılı!", Toast.LENGTH_LONG).show()
-    startMainMenuActivity()
-}
+    override fun onSuccess() {
+        Toast.makeText(this@ProjectAddActivity, "Başarılı!", Toast.LENGTH_LONG).show()
+        startMainMenuActivity()
+    }
 
-override fun onFailure(message: String) {
- Toast.makeText(this@ProjectAddActivity, message, Toast.LENGTH_LONG).show()
-}
+    override fun onFailure(message: String) {
+        Toast.makeText(this@ProjectAddActivity, message, Toast.LENGTH_LONG).show()
+    }
 
 
 }

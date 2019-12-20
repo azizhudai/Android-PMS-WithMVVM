@@ -15,6 +15,10 @@
     <string name="menu_share">My User List</string>
     <string name="menu_send">Sign Out</string>
     <string name="title_activity_project_add">ProjectAddActivity</string>
+
+    <string name="dialogTitle">Are you sure you want to delete?</string>
+    <string name="dialogMessage">Are you sure?</string>
+
     <string name="large_text">
         "Material is the metaphor.\n\n"
 

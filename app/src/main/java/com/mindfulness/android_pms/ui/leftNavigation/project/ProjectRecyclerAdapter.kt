@@ -18,8 +18,8 @@ class ProjectRecyclerAdapter(//private val userIdArray: ArrayList<String>,
     private val mCtx: Context
 ) : RecyclerView.Adapter<ProjectRecyclerAdapter.PostHolder>() {
 
-    var editClickStatus: MutableLiveData<HashMap<String,Any>> = MutableLiveData()
-    var deleteClickStatus: MutableLiveData<Boolean> = MutableLiveData()
+    var editClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
+    var deleteClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
@@ -32,6 +32,11 @@ class ProjectRecyclerAdapter(//private val userIdArray: ArrayList<String>,
 
     override fun getItemCount(): Int {
         return projectName.size
+    }
+
+    fun removeItem(position: Int) {
+        projectName.removeAt(position)
+        notifyDataSetChanged()
     }
 
     override fun onBindViewHolder(holder: ProjectRecyclerAdapter.PostHolder, position: Int) {
@@ -51,10 +56,18 @@ class ProjectRecyclerAdapter(//private val userIdArray: ArrayList<String>,
                 override fun onMenuItemClick(item: MenuItem): Boolean {
                     when (item.getItemId()) {
                         R.id.menu1 -> {
-                            editClickStatus.value = hashMapOf("pid" to  projectName.get(position).projectId, "statu" to true)
+                            editClickStatus.value = hashMapOf(
+                                "pid" to projectName.get(position).projectId,
+                                "statu" to true
+                            )
                         }
                         R.id.menu2 -> {
-                            deleteClickStatus.value = true
+                            deleteClickStatus.value = hashMapOf(
+                                "pid" to projectName.get(position).projectId,
+                                "position" to position,
+                                "pname" to projectName.get(position).projectName,
+                                "statu" to true
+                            )
                         }
 
                     }
