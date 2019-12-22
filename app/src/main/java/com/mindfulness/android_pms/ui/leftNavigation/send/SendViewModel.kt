@@ -4,10 +4,11 @@ package com.mindfulness.android_pms.ui.leftNavigation.send
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.mindfulness.android_pms.data.repositories.UserRepository
 
 class SendViewModel (
-    private val repository: UserRepository
+    //private val repository: UserRepository
 ): ViewModel() {
 
     private val _text = MutableLiveData<String>().apply {
@@ -15,9 +16,9 @@ class SendViewModel (
     }
     val text: LiveData<String> = _text
 
-    fun logout(){
-        repository.logout()
-        //Toast.makeText(this, user.displayName.toString(), Toast.LENGTH_LONG).show()
-        //view.context.startLoginActivity()
+    private val _logout = MutableLiveData<Boolean>().apply {
+        FirebaseAuth.getInstance()
+        value = true
     }
+
 }

@@ -9,14 +9,18 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
+import com.firebase.ui.firestore.FirestoreRecyclerAdapter
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.mindfulness.android_pms.R
 import com.mindfulness.android_pms.data.pojo.Project
 
-class ProjectRecyclerAdapter(//private val userIdArray: ArrayList<String>,
-    //private val projectIdArray: ArrayList<String>,
-    private val projectName: ArrayList<Project>,
-    private val mCtx: Context
-) : RecyclerView.Adapter<ProjectRecyclerAdapter.PostHolder>() {
+//(//private val userIdArray: ArrayList<String>,
+//    //private val projectIdArray: ArrayList<String>,
+//    private val projectName: ArrayList<Project>,
+//    private val mCtx: Context
+//)
+class ProjectRecyclerAdapter(options: FirestoreRecyclerOptions<Project>,private val mCtx: Context) :
+    FirestoreRecyclerAdapter<Project, ProjectRecyclerAdapter.PostHolder>(options) {
 
     var editClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
     var deleteClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
@@ -30,18 +34,18 @@ class ProjectRecyclerAdapter(//private val userIdArray: ArrayList<String>,
         return PostHolder(view)
     }
 
-    override fun getItemCount(): Int {
+   /* override fun getItemCount(): Int {
         return projectName.size
-    }
+    }*/
 
-    fun removeItem(position: Int) {
+    /*fun removeItem(position: Int) {
         projectName.removeAt(position)
         notifyDataSetChanged()
-    }
+    }*/
 
-    override fun onBindViewHolder(holder: ProjectRecyclerAdapter.PostHolder, position: Int) {
+    /*override fun onBindViewHolder(holder: ProjectRecyclerAdapter.PostHolder, position: Int) {
 
-        holder.rvProjectName?.text = projectName.get(position).projectName
+        // holder.rvProjectName?.text = projectName.get(position).projectName
 
         holder.buttonViewOption!!.setOnClickListener(View.OnClickListener {
             //creating a popup menu
@@ -79,7 +83,7 @@ class ProjectRecyclerAdapter(//private val userIdArray: ArrayList<String>,
             popup.show()
 
         })
-    }
+    }*/
 
     class PostHolder(view: View) : RecyclerView.ViewHolder(view) {
         //View Holder class
@@ -87,10 +91,55 @@ class ProjectRecyclerAdapter(//private val userIdArray: ArrayList<String>,
         var buttonViewOption: TextView? = null
 
         init {
+
             rvProjectName = view.findViewById(R.id.rv_project_name_text)
             buttonViewOption = view.findViewById(R.id.textViewOptions)
         }
 
+    }
+
+    override fun onBindViewHolder(holder: PostHolder, position: Int, project: Project) {
+
+        holder.rvProjectName!!.text = project.projectName
+
+        holder.buttonViewOption!!.setOnClickListener(View.OnClickListener {
+            //creating a popup menu
+            //creating a popup menu
+            val popup = PopupMenu(mCtx, holder.buttonViewOption)
+            //inflating menu from xml resource
+            //inflating menu from xml resource
+            popup.inflate(R.menu.rv_options_menu)
+            //adding click listener
+            //adding click listener
+            popup.setOnMenuItemClickListener { item ->
+                when (item.getItemId()) {
+                    R.id.menu1 -> {
+                        editClickStatus.value = hashMapOf(
+                            "pid" to project.projectId,
+                            "statu" to true
+                        )
+                    }
+                    R.id.menu2 -> {
+                        deleteClickStatus.value = hashMapOf(
+                            "pid" to project.projectId,
+                            "position" to position,
+                            "pname" to project.projectName,
+                            "statu" to true
+                        )
+                    }
+
+                }
+                false
+            }
+            //displaying the popup
+            //displaying the popup
+            popup.show()
+
+        })
+    }
+
+    fun deleteItem(position: Int){
+        snapshots.getSnapshot(position).reference.delete()
     }
 
 }

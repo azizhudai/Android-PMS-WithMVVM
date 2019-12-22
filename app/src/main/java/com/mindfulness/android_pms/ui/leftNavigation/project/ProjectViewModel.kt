@@ -3,6 +3,7 @@ package com.mindfulness.android_pms.ui.leftNavigation.project
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -25,16 +26,21 @@ class ProjectViewModel(
     }*/
 
 
-    val _projectList = MutableLiveData<ArrayList<Project>>().apply {
+    val _projectList = MutableLiveData<Query>().apply {
 
 
-        var projectStr: ArrayList<Project> = ArrayList()
+        //var projectStr: ArrayList<Project> = ArrayList()
         var db: FirebaseFirestore = FirebaseFirestore.getInstance()
-        var firebaseAuth = FirebaseAuth.getInstance()
-        var project: Project
-        projectStr.clear()
+        //var firebaseAuth = FirebaseAuth.getInstance()
+        //var project: Project
+        var query = db.collection("Project")/*.orderBy(
+            "projectCreateDate",
+            Query.Direction.DESCENDING
+        ).whereEqualTo("createUserId", firebaseAuth.uid)*/
+        value = query
+       // projectStr.clear()
 
-        db.collection("Project").orderBy(
+        /*db.collection("Project").orderBy(
             "projectCreateDate",
             Query.Direction.DESCENDING
         ).whereEqualTo("createUserId", firebaseAuth.uid)
@@ -70,7 +76,7 @@ class ProjectViewModel(
                         }
                     }
                 }
-            }
+            }*/
         // Thread.sleep(3000)
         //  projectStr.add("aaaaaaa")
         //projectStr[1] = "aaaaaaa"
@@ -78,7 +84,7 @@ class ProjectViewModel(
         //Thread.sleep(3000)
         //repository.userProjectList("qqq")
     }
-    val projectList: LiveData<ArrayList<Project>> = _projectList
+    val projectList: LiveData<Query> = _projectList
     //_projectList = repository.userProjectList("qqq")/*.apply {
     /*_projectList = repository.userProjectList("qqq")
 }*/

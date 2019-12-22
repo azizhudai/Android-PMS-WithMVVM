@@ -144,8 +144,12 @@
         app:layout_anchorGravity="bottom|end"
         android:backgroundTint="@color/colorPrimaryDark"
         app:srcCompat="@android:drawable/ic_input_add"
-        android:onClick="@{() -> viewmodel.insertClick()}"/>
+        android:onClick="insertOrUpdateProjectClick"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 </layout>
+
+<!--
+@{() -> viewmodel.insertClick()}
+-->

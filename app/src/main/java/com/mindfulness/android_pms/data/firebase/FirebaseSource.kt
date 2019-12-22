@@ -6,6 +6,7 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mindfulness.android_pms.data.pojo.Project
 import io.reactivex.Completable
@@ -86,9 +87,17 @@ class FirebaseSource {
 
     fun projectInsert(project: Project) = Completable.create { emitter ->
 
+        val myId: String
         val ref =
-            db.collection("Project").document()
-        val myId = ref.id
+            db.collection("Project")
+        var refDoc: DocumentReference
+        if (project.projectId.isNullOrEmpty()) {
+            refDoc = ref.document()
+            myId = refDoc.id
+        } else {
+            refDoc = ref.document(project.projectId)
+            myId = project.projectId
+        }
 
         /*var firebaseAuth = FirebaseAuth.getInstance()*/
         var uid = firebaseAuth.uid
@@ -102,7 +111,7 @@ class FirebaseSource {
             uid!!
         )
 
-        ref.set(project__).addOnCompleteListener { task ->
+        refDoc.set(project__).addOnCompleteListener { task ->
             if (task.isComplete && task.isSuccessful)
 
                 emitter.onComplete()
@@ -113,7 +122,7 @@ class FirebaseSource {
 
     fun userProjectList(userId: String): ArrayList<String> {
 
-         var db: FirebaseFirestore = FirebaseFirestore.getInstance()
+        var db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
         db.collection("Project")//.whereEqualTo("createUserId", firebaseAuth.uid)
             .addSnapshotListener { snapshot, exception ->

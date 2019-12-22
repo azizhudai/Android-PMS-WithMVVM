@@ -4,11 +4,13 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.DatePicker
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.Observer
+import com.google.firebase.firestore.model.value.IntegerValue
 import com.mindfulness.android_pms.R
 import com.mindfulness.android_pms.databinding.ActivityProjectAddBinding
 import com.mindfulness.android_pms.ui.auth.AuthListener
@@ -25,6 +27,19 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
     override val kodein by kodein()
     private val factory: ProjectAddViewModelFactory by instance()
     private lateinit var viewModel: ProjectAddViewModel
+
+    private var setStartYear: Int = 0
+    private var setStartMonth: Int = 0
+    private var setStartDay: Int = 0
+
+    private var setEndYear: Int = 0
+    private var setEndMonth: Int = 0
+    private var setEndDay: Int = 0
+
+    var dialogStartDate: DatePickerDialog? = null
+    var dialogEndDate: DatePickerDialog? = null
+
+    var pid: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,17 +59,50 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
         //get intent values
         var intent1: Intent
         intent1 = getIntent()
-        var pid: String? = intent1.getStringExtra("pid")
+        pid = intent1.getStringExtra("pid")
         if (pid == null) {
             println("pid is empty." + pid)
-        } else {
+        }
+        if (!pid.isNullOrEmpty()) {
             println("pid: " + pid)
-            viewModel.deneme(pid).observe(this, Observer { project ->
+            viewModel.deneme(pid!!).observe(this, Observer { project ->
                 if (project != null) {
                     et_projectTitle.setText(project.projectName)
                     ed_projectDetail.setText(project.projectDetail)
                     tv_ProjectStartDate.text = project.projectStartDate.let { "Start Date" }
+                    project.projectStartDate?.let {
+
+                        tv_ProjectStartDate.text = project.projectStartDate
+                        var startDate = project.projectStartDate!!.split("/")
+
+                        setStartDay = startDate[0].toInt()
+                        setStartMonth = startDate[1].toInt()
+                        setStartYear = startDate[2].toInt()
+                        var datePicker: DatePicker = DatePicker(this)
+                        viewModel.startDateSetListener.onDateSet(
+                            datePicker,
+                            setStartYear,
+                            setStartMonth - 1,
+                            setStartDay
+                        )
+                    }
                     tv_ProjectEndDate.text = project.projectEndDate.let { "End Date" }
+                    project.projectEndDate?.let {
+                        tv_ProjectEndDate.text = project.projectEndDate
+
+                        var endDate = project.projectEndDate!!.split("/")
+
+                        setEndDay = endDate[0].toInt()
+                        setEndMonth = endDate[1].toInt()
+                        setEndYear = endDate[2].toInt()
+                        var datePicker: DatePicker = DatePicker(this)
+                        viewModel.endDateSetListener.onDateSet(
+                            datePicker,
+                            setEndYear,
+                            setEndMonth - 1,
+                            setEndDay
+                        )
+                    }
                 }
             })
         }
@@ -86,26 +134,93 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
 
     fun projectStartDateClick(view: View) {
 
-        DatePickerDialog(
+        /*var year: Int
+        var month: Int
+        var day: Int
+
+        val dateSetListener =
+            DatePickerDialog.OnDateSetListener { view, year, monthOfYear, dayOfMonth ->
+                viewModel.calStart.set(Calendar.YEAR, setStartYear)
+                viewModel.calStart.set(Calendar.MONTH, setStartMonth)
+                viewModel.calStart.set(Calendar.DAY_OF_MONTH, setStartDay)
+            }
+
+        if (setStartYear == 0) {
+            year = Calendar.YEAR
+            month = Calendar.MONTH
+            day = Calendar.DAY_OF_MONTH
+            println("YEAR:" + Calendar.YEAR + "::month::" + month)
+            var aa = viewModel.startDateSetListener
+        } else {
+            year = setStartYear
+            month = setStartMonth
+            day = setStartDay
+            var aa = dateSetListener
+        }*/
+
+        dialogStartDate = DatePickerDialog(
             this,
-            viewModel.startDateSetListener,
+            viewModel.startDateSetListener,//viewModel.startDateSetListener,
             // set DatePickerDialog to point to today's date when it loads up
             viewModel.calStart.get(Calendar.YEAR),
             viewModel.calStart.get(Calendar.MONTH),
             viewModel.calStart.get(Calendar.DAY_OF_MONTH)
-        ).show()
+        )
+        dialogStartDate!!.show()
+
+        //val c = Calendar.getInstance()
+
+        /*var day2 = 0
+        var month2 = 0
+        var year2 = 0
+        if (setStartYear == 0) {
+            day2 = viewModel.calStart.get(Calendar.DAY_OF_MONTH)
+            month2 = viewModel.calStart.get(Calendar.MONTH)
+            year2 = viewModel.calStart.get(Calendar.YEAR)
+            println("date:::$setStartDay - $setStartMonth - $setStartYear")
+        } else {
+            day2 = setStartYear
+            month2 = setStartMonth
+            year2 = setStartDay
+            println("date:::$setStartDay - $setStartMonth - $setStartYear")
+        }
+        val dpd = DatePickerDialog(
+            this,
+            android.R.style.Widget_PopupWindow,
+            DatePickerDialog.OnDateSetListener { datePicker, selyear, monthOfYear, dayOfMonth ->
+
+                if (tv_ProjectEndDate.text.equals("End Date")) {
+                    viewModel.setStartDate(selyear, monthOfYear, dayOfMonth)
+                } else { // Son tarihten küçük mü kontrol et
+
+                    viewModel.checkStartDate(selyear, monthOfYear, dayOfMonth)
+
+                }
+                day2 = dayOfMonth
+                month2 = monthOfYear + 1
+                year2 = selyear
+                //tv.text = "$day - $month - $year"
+
+            }, year2, month2, day2
+        )
+
+        dpd.show()*/
+
     }
 
     fun projectEndDateClick(view: View) {
 
-        DatePickerDialog(
+        dialogEndDate = DatePickerDialog(
             this,
             viewModel.endDateSetListener,
             // set DatePickerDialog to point to today's date when it loads up
             viewModel.calEnd.get(Calendar.YEAR),
             viewModel.calEnd.get(Calendar.MONTH),
             viewModel.calEnd.get(Calendar.DAY_OF_MONTH)
-        ).show()
+        )
+        // dialog.getDatePicker().setOnDateChangedListener().setMinDate(System.currentTimeMillis() - 1000)
+        // dialog.datePicker.maxDate = Calendar.getInstance().timeInMillis
+        dialogEndDate!!.show()
     }
 
     override fun onStarted() {
@@ -121,5 +236,13 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
         Toast.makeText(this@ProjectAddActivity, message, Toast.LENGTH_LONG).show()
     }
 
+    fun insertOrUpdateProjectClick(view: View) {
+
+        if (pid.isNullOrEmpty()) {
+            viewModel.insertClick()
+        } else {
+            viewModel.insertClick(pid)
+        }
+    }
 
 }

@@ -52,7 +52,7 @@ class ProjectAddViewModel(
     // variable to track event time
     private var mLastClickTime: Long = 0
 
-    fun insertClick() {
+    fun insertClick(pid:String? = null) {
 
         // Preventing multiple clicks, using threshold of 1 second
         if (SystemClock.elapsedRealtime() - mLastClickTime < 1500) {
@@ -69,16 +69,31 @@ class ProjectAddViewModel(
         //insert started
         authListener?.onStarted()
 
-        project = Project(
-            "",
-            title!!,
-            projectDetail,
-            startDateLiveData.value,
-            endDateLiveData.value,
-            Calendar.getInstance().time.toString(),
-            ""
-        )
-        //calling login from repository to perform the actual inserteion
+       // if(pid == null){
+            project = Project(
+                "",
+                title!!,
+                projectDetail,
+                startDateLiveData.value,
+                endDateLiveData.value,
+                Calendar.getInstance().time.toString(),
+                ""
+            )
+       // }
+       /* if(pid != null){
+            project = Project(
+                pid,
+                title!!,
+                projectDetail,
+                startDateLiveData.value,
+                endDateLiveData.value,
+                Calendar.getInstance().time.toString(),
+                ""
+            )
+        }*/
+        pid?.let { project!!.projectId = pid }
+
+        //calling login from repository to perform the actual insertion
         val disposable = repository.projectInsert(project!!)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -154,12 +169,27 @@ class ProjectAddViewModel(
 
     // create an OnDateSetListener
     val startDateSetListener = object : DatePickerDialog.OnDateSetListener {
+
+        var year: Int? = null
+        var month: Int? = null
+        var day: Int? = null
+
+      /*  if (0 == 0) {
+            year = Calendar.YEAR
+            month = Calendar.MONTH
+            day = Calendar.DAY_OF_MONTH
+            println("YEAR:" + Calendar.YEAR+"::month::"+month)
+        } else {
+            year = setStartYear
+            month = setStartMonth
+            day = setStartDay
+        }*/
+
         override fun onDateSet(
             view: DatePicker, year: Int, monthOfYear: Int,
             dayOfMonth: Int
         ) {
-
-
+            println("startDateSetListener:::$year - $monthOfYear - $dayOfMonth")
             if (endDate.equals("End Date")) {
                 setStartDate(year, monthOfYear, dayOfMonth)
 
@@ -176,7 +206,7 @@ class ProjectAddViewModel(
             view: DatePicker, year: Int, monthOfYear: Int,
             dayOfMonth: Int
         ) {
-
+            println("endDateSetListener:::$year - $monthOfYear - $dayOfMonth")
             if (startDate.equals("Start Date")) {
                 setEndDate(year, monthOfYear, dayOfMonth)
 
@@ -219,7 +249,7 @@ class ProjectAddViewModel(
         if (startYear == year && endMonth < monthOfYear) {
             isSetStartDate = false
             startStatusLiveData.value =
-                "Başlama ayı Bitirme ayından küçük olamaz: ${endMonth} > ${monthOfYear}"
+                "Başlama ayı Bitirme ayından küçük olamaz."
             /* Toast.makeText(
                  this@ProjectAddActivity,
                  "Başlama ayı Bitirme ayından küçük olamaz: ${endMonth} > ${monthOfYear}",
@@ -236,7 +266,7 @@ class ProjectAddViewModel(
         if (endMonth == monthOfYear && endYear == year && endDay < dayOfMonth) {
             isSetStartDate = false
             startStatusLiveData.value =
-                "Başlama günü Bitirme gününden küçük olamaz: ${startDay} >= ${dayOfMonth}"
+                "Başlama günü Bitirme gününden küçük olamaz."
             /*Toast.makeText(
                 this@ProjectAddActivity,
                 "Başlama günü Bitirme gününden küçük olamaz: ${startDay} >= ${dayOfMonth}",
@@ -259,7 +289,7 @@ class ProjectAddViewModel(
         if (startYear > year) {
             isSetEndDate = false
             endStatusLiveData.value =
-                "Bitirme yılı Başlama yılından küçük olamaz: ${startYear} >= ${year}"
+                "Bitirme yılı Başlama yılından küçük olamaz."
             /*Toast.makeText(
                 this@ProjectAddActivity,
                 "Bitirme yılı Başlama yılından küçük olamaz: ${startYear} >= ${year}",
@@ -279,7 +309,7 @@ class ProjectAddViewModel(
         if (startYear == year && startMonth > monthOfYear) {
             isSetEndDate = false
             endStatusLiveData.value =
-                "Bitirme ayı Başlama ayından küçük olamaz: ${startMonth} > ${monthOfYear}"
+                "Bitirme ayı Başlama ayından küçük olamaz."
             /*Toast.makeText(
                 this@ProjectAddActivity,
                 "Bitirme ayı Başlama ayından küçük olamaz: ${startMonth} > ${monthOfYear}",
@@ -296,7 +326,7 @@ class ProjectAddViewModel(
         if (startMonth == monthOfYear && startYear == year && startDay > dayOfMonth) {
             isSetEndDate = false
             endStatusLiveData.value =
-                "Bitirme günü Başlama gününden küçük olamaz: ${startDay} >= ${dayOfMonth}"
+                "Bitirme günü Başlama gününden küçük olamaz."
             /* Toast.makeText(
                  this@ProjectAddActivity,
                  "Bitirme günü Başlama gününden küçük olamaz: ${startDay} >= ${dayOfMonth}",

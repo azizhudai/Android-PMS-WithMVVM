@@ -1,7 +1,5 @@
 package com.mindfulness.android_pms.data.pojo
 
-import com.google.firebase.Timestamp
-
 data class Project(
     var projectId: String,
     var projectName: String,
@@ -11,6 +9,8 @@ data class Project(
     var projectCreateDate: String,
     var createUserId: String
 ) {
+
+    constructor(): this("","","", "","","","" )
 
     /*
     private var projectId:String
