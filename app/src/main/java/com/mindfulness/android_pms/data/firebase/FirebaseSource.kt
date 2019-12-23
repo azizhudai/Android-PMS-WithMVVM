@@ -1,16 +1,15 @@
 package com.mindfulness.android_pms.data.firebase
 
-import android.widget.Toast
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.tasks.Task
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.data.pojo.Project
+import com.mindfulness.android_pms.data.pojo.ProjectLog
 import io.reactivex.Completable
-import com.mindfulness.android_pms.data.pojo.User
 
 class FirebaseSource {
     var projectStr: ArrayList<String> = ArrayList()
@@ -88,14 +87,15 @@ class FirebaseSource {
     fun projectInsert(project: Project) = Completable.create { emitter ->
 
         val myId: String
-        val ref =
+        val refProject =
             db.collection("Project")
-        var refDoc: DocumentReference
+        val refProjectLog = db.collection("ProjectLog")
+        var refProjectDoc: DocumentReference
         if (project.projectId.isNullOrEmpty()) {
-            refDoc = ref.document()
-            myId = refDoc.id
+            refProjectDoc = refProject.document()
+            myId = refProjectDoc.id
         } else {
-            refDoc = ref.document(project.projectId)
+            refProjectDoc = refProject.document(project.projectId)
             myId = project.projectId
         }
 
@@ -111,7 +111,7 @@ class FirebaseSource {
             uid!!
         )
 
-        refDoc.set(project__).addOnCompleteListener { task ->
+        refProjectDoc.set(project__).addOnCompleteListener { task ->
             if (task.isComplete && task.isSuccessful)
 
                 emitter.onComplete()
@@ -146,6 +146,20 @@ class FirebaseSource {
                 }
             }
         return projectStr
+    }
+
+    fun getProjectLogList(projectId: String): Query {
+
+        var projectLogDoc = db.collection("ProjectLog")
+        var query = projectLogDoc.orderBy(
+            "createDate",
+            Query.Direction.DESCENDING
+        ).whereEqualTo("projectId", projectId) //.whereEqualTo("createUserId", firebaseAuth.uid)
+
+        /*  var options =
+              FirestoreRecyclerOptions.Builder<ProjectLog>().setQuery(query, ProjectLog::class.java).build()
+  */
+        return query
     }
 
 }

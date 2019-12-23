@@ -3,14 +3,8 @@ package com.mindfulness.android_pms.ui.leftNavigation.project
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.firebase.ui.firestore.FirestoreRecyclerOptions
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.mindfulness.android_pms.data.firebase.FirebaseSource
-import com.mindfulness.android_pms.data.pojo.Project
-import com.mindfulness.android_pms.data.repositories.ProjectRepository
-import java.util.ArrayList
 
 class ProjectViewModel(
     // private var repository: ProjectRepository = ProjectRepository(FirebaseSource())
@@ -38,7 +32,7 @@ class ProjectViewModel(
             Query.Direction.DESCENDING
         ).whereEqualTo("createUserId", firebaseAuth.uid)*/
         value = query
-       // projectStr.clear()
+        // projectStr.clear()
 
         /*db.collection("Project").orderBy(
             "projectCreateDate",

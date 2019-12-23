@@ -2,7 +2,6 @@ package com.mindfulness.android_pms.ui.leftNavigation.project
 
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
@@ -14,12 +13,17 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.mindfulness.android_pms.R
 import com.mindfulness.android_pms.data.pojo.Project
 
+
 //(//private val userIdArray: ArrayList<String>,
 //    //private val projectIdArray: ArrayList<String>,
 //    private val projectName: ArrayList<Project>,
 //    private val mCtx: Context
 //)
-class ProjectRecyclerAdapter(options: FirestoreRecyclerOptions<Project>,private val mCtx: Context) :
+class ProjectRecyclerAdapter(
+    options: FirestoreRecyclerOptions<Project>,
+    //var projectList: MutableList<Project?>,
+    private val mCtx: Context
+) :
     FirestoreRecyclerAdapter<Project, ProjectRecyclerAdapter.PostHolder>(options) {
 
     var editClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
@@ -34,9 +38,9 @@ class ProjectRecyclerAdapter(options: FirestoreRecyclerOptions<Project>,private 
         return PostHolder(view)
     }
 
-   /* override fun getItemCount(): Int {
-        return projectName.size
-    }*/
+    /* override fun getItemCount(): Int {
+         return projectName.size
+     }*/
 
     /*fun removeItem(position: Int) {
         projectName.removeAt(position)
@@ -101,6 +105,7 @@ class ProjectRecyclerAdapter(options: FirestoreRecyclerOptions<Project>,private 
     override fun onBindViewHolder(holder: PostHolder, position: Int, project: Project) {
 
         holder.rvProjectName!!.text = project.projectName
+        //projectList = project
 
         holder.buttonViewOption!!.setOnClickListener(View.OnClickListener {
             //creating a popup menu
@@ -138,8 +143,24 @@ class ProjectRecyclerAdapter(options: FirestoreRecyclerOptions<Project>,private 
         })
     }
 
-    fun deleteItem(position: Int){
+    fun deleteItem(position: Int) {
         snapshots.getSnapshot(position).reference.delete()
     }
+
+    /* override fun onChildChanged(
+         type: ChangeEventType,
+         snapshot: DocumentSnapshot,
+         newIndex: Int,
+         oldIndex: Int
+     ) {
+
+         when (type) {
+             ChangeEventType.ADDED -> notifyItemInserted(newIndex)
+             ChangeEventType.CHANGED -> notifyItemChanged(newIndex)
+             ChangeEventType.REMOVED -> notifyItemRemoved(newIndex)
+             ChangeEventType.MOVED -> notifyItemMoved(oldIndex, newIndex)
+         }
+     }*/
+
 
 }

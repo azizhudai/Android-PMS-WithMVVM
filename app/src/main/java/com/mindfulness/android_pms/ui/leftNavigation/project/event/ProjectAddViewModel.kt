@@ -6,9 +6,11 @@ import android.widget.DatePicker
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.data.pojo.Project
+import com.mindfulness.android_pms.data.pojo.ProjectLog
 import com.mindfulness.android_pms.data.repositories.ProjectRepository
 import com.mindfulness.android_pms.ui.auth.AuthListener
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -52,7 +54,7 @@ class ProjectAddViewModel(
     // variable to track event time
     private var mLastClickTime: Long = 0
 
-    fun insertClick(pid:String? = null) {
+    fun insertClick(pid: String? = null) {
 
         // Preventing multiple clicks, using threshold of 1 second
         if (SystemClock.elapsedRealtime() - mLastClickTime < 1500) {
@@ -69,28 +71,28 @@ class ProjectAddViewModel(
         //insert started
         authListener?.onStarted()
 
-       // if(pid == null){
-            project = Project(
-                "",
-                title!!,
-                projectDetail,
-                startDateLiveData.value,
-                endDateLiveData.value,
-                Calendar.getInstance().time.toString(),
-                ""
-            )
-       // }
-       /* if(pid != null){
-            project = Project(
-                pid,
-                title!!,
-                projectDetail,
-                startDateLiveData.value,
-                endDateLiveData.value,
-                Calendar.getInstance().time.toString(),
-                ""
-            )
-        }*/
+        // if(pid == null){
+        project = Project(
+            "",
+            title!!,
+            projectDetail,
+            startDateLiveData.value,
+            endDateLiveData.value,
+            Calendar.getInstance().time.toString(),
+            ""
+        )
+        // }
+        /* if(pid != null){
+             project = Project(
+                 pid,
+                 title!!,
+                 projectDetail,
+                 startDateLiveData.value,
+                 endDateLiveData.value,
+                 Calendar.getInstance().time.toString(),
+                 ""
+             )
+         }*/
         pid?.let { project!!.projectId = pid }
 
         //calling login from repository to perform the actual insertion
@@ -174,16 +176,16 @@ class ProjectAddViewModel(
         var month: Int? = null
         var day: Int? = null
 
-      /*  if (0 == 0) {
-            year = Calendar.YEAR
-            month = Calendar.MONTH
-            day = Calendar.DAY_OF_MONTH
-            println("YEAR:" + Calendar.YEAR+"::month::"+month)
-        } else {
-            year = setStartYear
-            month = setStartMonth
-            day = setStartDay
-        }*/
+        /*  if (0 == 0) {
+              year = Calendar.YEAR
+              month = Calendar.MONTH
+              day = Calendar.DAY_OF_MONTH
+              println("YEAR:" + Calendar.YEAR+"::month::"+month)
+          } else {
+              year = setStartYear
+              month = setStartMonth
+              day = setStartDay
+          }*/
 
         override fun onDateSet(
             view: DatePicker, year: Int, monthOfYear: Int,
@@ -380,7 +382,7 @@ class ProjectAddViewModel(
             }
     }
 
-    fun deneme(pid:String):MutableLiveData<Project?>{
+    fun deneme(pid: String): MutableLiveData<Project?> {
         var db: FirebaseFirestore = FirebaseFirestore.getInstance()
         var project: MutableLiveData<Project?> = MutableLiveData()
 
@@ -413,5 +415,9 @@ class ProjectAddViewModel(
 
 //val projectOne: LiveData<ArrayList<Project>> = _project
 
+    /*fun _getProjectLogDB(projectId: String) = MutableLiveData<Query?>().apply {
+        var options = repository.getProjectLogOptions(projectId)
 
+        value = options
+    }*/
 }

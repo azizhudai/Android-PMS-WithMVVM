@@ -10,8 +10,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.model.value.IntegerValue
 import com.mindfulness.android_pms.R
+import com.mindfulness.android_pms.data.firebase.FirebaseSource
+import com.mindfulness.android_pms.data.pojo.ProjectLog
 import com.mindfulness.android_pms.databinding.ActivityProjectAddBinding
 import com.mindfulness.android_pms.ui.auth.AuthListener
 import com.mindfulness.android_pms.utils.startMainMenuActivity
@@ -41,6 +48,9 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
 
     var pid: String? = null
 
+    var rv_projectLog2: RecyclerView? = null
+    var adapter: ProjectLogRecyclerAdapter? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //setContentView(R.layout.activity_project_add)
@@ -56,6 +66,8 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
 
         viewModel.authListener = this
 
+        rv_projectLog2 = findViewById(R.id.rv_projectLog)
+
         //get intent values
         var intent1: Intent
         intent1 = getIntent()
@@ -64,6 +76,10 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
             println("pid is empty." + pid)
         }
         if (!pid.isNullOrEmpty()) {
+
+
+            getDataFromFiretoreProjectLog(rv_projectLog2!!,pid!!)
+
             println("pid: " + pid)
             viewModel.deneme(pid!!).observe(this, Observer { project ->
                 if (project != null) {
@@ -245,4 +261,43 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
         }
     }
 
+    private fun getDataFromFiretoreProjectLog(rv_projectLog: RecyclerView, projectId: String) {
+
+        var db = FirebaseFirestore.getInstance()
+        var projectLogDoc = db.collection("ProjectLog")
+        var query = projectLogDoc.whereEqualTo("projectId", projectId)//.orderBy("createDate",Query.Direction.DESCENDING) //.orderBy("createDate",Query.Direction.DESCENDING)
+      /*  var query = viewModel._getProjectLogDB(projectId)
+        query?.observe(this, Observer {
+            if(it != null){*/
+                var options =
+                    FirestoreRecyclerOptions.Builder<ProjectLog>().setQuery(query, ProjectLog::class.java).build()
+                adapter = ProjectLogRecyclerAdapter(options = options)
+                rv_projectLog.setHasFixedSize(true)
+                var layoutManager = LinearLayoutManager(this@ProjectAddActivity.applicationContext)
+                rv_projectLog.layoutManager = layoutManager
+                rv_projectLog.adapter = adapter
+           // }
+
+      //  })
+
+
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (adapter != null)
+        adapter!!.startListening()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (adapter != null)
+            adapter!!.startListening()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (adapter != null)
+            adapter!!.stopListening()
+    }
 }
