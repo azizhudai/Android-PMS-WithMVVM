@@ -18,6 +18,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".ui.leftNavigation.project.task.divide_infinite.DivideInfiniteMainActivity" />
+        <activity android:name=".ui.leftNavigation.project.task.divide_4.DivideMainActivity" />
+        <activity
+            android:name=".ui.leftNavigation.project.task.ui.kanban.add.TaskKanbanAddActivity"
+            android:label=""
+            android:parentActivityName=".ui.main.MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.mindfulness.android_pms.ui.leftNavigation.project.task.ui.kanban.TaskManagementActivity" />
+        </activity>
+        <activity
+            android:name=".ui.leftNavigation.project.task.ui.kanban.TaskManagementActivity"
+            android:label="@string/title_activity_task_management"
+            android:parentActivityName=".ui.main_menu.MainMenuActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.mindfulness.android_pms.ui.main_menu.MainMenuActivity" />
+        </activity>
         <activity
             android:name=".ui.leftNavigation.project.event.ProjectAddActivity"
             android:label=""

@@ -19,6 +19,11 @@
     <string name="dialogTitle">Are you sure you want to delete?</string>
     <string name="dialogMessage">Are you sure?</string>
 
+    <string-array name="project_tech">
+        <item>Kanban</item>
+        <item>Divide by 4</item>
+    </string-array>
+
     <string name="large_text">
         "Material is the metaphor.\n\n"
 
@@ -108,5 +113,15 @@
         "For example, position the FAB to one side of stream of a cards so the FAB won’t interfere "
         "when a user tries to pick up one of cards.\n\n"
     </string>
+    <string name="title_activity_task_management">TaskManagementActivity</string>
+    <string name="tab_text_1">To Do</string>
+    <string name="tab_text_2">Doing</string>
+    <string name="tab_text_3">Done</string>
 
+    <string name="task_kanban_create">Create task</string>
+
+    <string name="task_divide_do_first">Do First</string>
+    <string name="task_divide_do_later">Do Later</string>
+    <string name="task_divide_delegate">Delegate</string>
+    <string name="task_divide_eliminate">Eliminate</string>
 </resources>

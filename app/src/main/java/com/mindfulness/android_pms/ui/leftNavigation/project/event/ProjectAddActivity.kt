@@ -4,6 +4,8 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -14,10 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.model.value.IntegerValue
 import com.mindfulness.android_pms.R
-import com.mindfulness.android_pms.data.firebase.FirebaseSource
 import com.mindfulness.android_pms.data.pojo.ProjectLog
 import com.mindfulness.android_pms.databinding.ActivityProjectAddBinding
 import com.mindfulness.android_pms.ui.auth.AuthListener
@@ -29,7 +28,8 @@ import org.kodein.di.generic.instance
 import java.util.*
 
 @Suppress("DEPRECATED_IDENTITY_EQUALS", "UNUSED_VALUE")
-class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
+class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware,
+    AdapterView.OnItemSelectedListener {
 
     override val kodein by kodein()
     private val factory: ProjectAddViewModelFactory by instance()
@@ -50,11 +50,11 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
 
     var rv_projectLog2: RecyclerView? = null
     var adapter: ProjectLogRecyclerAdapter? = null
+    var selectedTech = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //setContentView(R.layout.activity_project_add)
-
 
         val binding: ActivityProjectAddBinding =
             DataBindingUtil.setContentView(this, R.layout.activity_project_add)
@@ -69,21 +69,34 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
         rv_projectLog2 = findViewById(R.id.rv_projectLog)
 
         //get intent values
-        var intent1: Intent
-        intent1 = getIntent()
+        val intent1: Intent = intent
         pid = intent1.getStringExtra("pid")
         if (pid == null) {
             println("pid is empty." + pid)
+            val listOfItemsTech = arrayOf("Kanban", "Divide of 4")
+            sp_tech.visibility = View.VISIBLE
+            sp_tech!!.setOnItemSelectedListener(this@ProjectAddActivity)
+
+            // Create an ArrayAdapter using a simple spinner layout and languages array
+            val aa = ArrayAdapter(this, android.R.layout.simple_spinner_item, listOfItemsTech)
+            // Set layout to use when the list of choices appear
+            aa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            // Set Adapter to Spinner
+            sp_tech!!.adapter = aa
         }
         if (!pid.isNullOrEmpty()) {
 
+            sp_tech.visibility = View.GONE
+            getDataFromFiretoreProjectLog(rv_projectLog2!!, pid!!)
 
-            getDataFromFiretoreProjectLog(rv_projectLog2!!,pid!!)
-
-            println("pid: " + pid)
             viewModel.deneme(pid!!).observe(this, Observer { project ->
                 if (project != null) {
                     et_projectTitle.setText(project.projectName)
+
+                    sp_tech.setSelection(project.techId.toInt())
+                    viewModel.selectedItemPositionSpinner = project.techId.toInt()
+                    //Toast.makeText(this,project.techId.toString(),Toast.LENGTH_LONG).show()
+
                     ed_projectDetail.setText(project.projectDetail)
                     tv_ProjectStartDate.text = project.projectStartDate.let { "Start Date" }
                     project.projectStartDate?.let {
@@ -94,7 +107,7 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
                         setStartDay = startDate[0].toInt()
                         setStartMonth = startDate[1].toInt()
                         setStartYear = startDate[2].toInt()
-                        var datePicker: DatePicker = DatePicker(this)
+                        var datePicker = DatePicker(this)
                         viewModel.startDateSetListener.onDateSet(
                             datePicker,
                             setStartYear,
@@ -111,7 +124,7 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
                         setEndDay = endDate[0].toInt()
                         setEndMonth = endDate[1].toInt()
                         setEndYear = endDate[2].toInt()
-                        var datePicker: DatePicker = DatePicker(this)
+                        var datePicker = DatePicker(this)
                         viewModel.endDateSetListener.onDateSet(
                             datePicker,
                             setEndYear,
@@ -265,20 +278,24 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
 
         var db = FirebaseFirestore.getInstance()
         var projectLogDoc = db.collection("ProjectLog")
-        var query = projectLogDoc.whereEqualTo("projectId", projectId)//.orderBy("createDate",Query.Direction.DESCENDING) //.orderBy("createDate",Query.Direction.DESCENDING)
-      /*  var query = viewModel._getProjectLogDB(projectId)
-        query?.observe(this, Observer {
-            if(it != null){*/
-                var options =
-                    FirestoreRecyclerOptions.Builder<ProjectLog>().setQuery(query, ProjectLog::class.java).build()
-                adapter = ProjectLogRecyclerAdapter(options = options)
-                rv_projectLog.setHasFixedSize(true)
-                var layoutManager = LinearLayoutManager(this@ProjectAddActivity.applicationContext)
-                rv_projectLog.layoutManager = layoutManager
-                rv_projectLog.adapter = adapter
-           // }
+        var query = projectLogDoc.whereEqualTo(
+            "projectId",
+            projectId
+        )//.orderBy("createDate",Query.Direction.DESCENDING) //.orderBy("createDate",Query.Direction.DESCENDING)
+        /*  var query = viewModel._getProjectLogDB(projectId)
+          query?.observe(this, Observer {
+              if(it != null){*/
+        var options =
+            FirestoreRecyclerOptions.Builder<ProjectLog>().setQuery(query, ProjectLog::class.java)
+                .build()
+        adapter = ProjectLogRecyclerAdapter(options = options)
+        rv_projectLog.setHasFixedSize(true)
+        var layoutManager = LinearLayoutManager(this@ProjectAddActivity.applicationContext)
+        rv_projectLog.layoutManager = layoutManager
+        rv_projectLog.adapter = adapter
+        // }
 
-      //  })
+        //  })
 
 
     }
@@ -286,7 +303,7 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
     override fun onStart() {
         super.onStart()
         if (adapter != null)
-        adapter!!.startListening()
+            adapter!!.startListening()
     }
 
     override fun onResume() {
@@ -300,4 +317,21 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware {
         if (adapter != null)
             adapter!!.stopListening()
     }
+
+    override fun onNothingSelected(parent: AdapterView<*>?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+
+        viewModel.selectedItemPositionSpinner = position
+        selectedTech = position
+        // Toast.makeText(application,selectedTech.toString(),Toast.LENGTH_LONG).show()
+    }
+
+    /*fun setSelectedItemPosition(selectedItemPosition: Int) {
+
+        // var BR :Spinner
+        notifyPropertyChanged(sp_tech.selectedItemPosition)
+    }*/
 }

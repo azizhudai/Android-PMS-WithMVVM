@@ -1,6 +1,5 @@
 package com.mindfulness.android_pms.data.firebase
 
-import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -8,7 +7,6 @@ import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.data.pojo.Project
-import com.mindfulness.android_pms.data.pojo.ProjectLog
 import io.reactivex.Completable
 
 class FirebaseSource {
@@ -84,12 +82,14 @@ class FirebaseSource {
         }
     }
 
+    //fun TEntityInsert(TEntity:T)
+
     fun projectInsert(project: Project) = Completable.create { emitter ->
 
         val myId: String
         val refProject =
             db.collection("Project")
-        val refProjectLog = db.collection("ProjectLog")
+        //val refProjectLog = db.collection("ProjectLog")
         var refProjectDoc: DocumentReference
         if (project.projectId.isNullOrEmpty()) {
             refProjectDoc = refProject.document()
@@ -108,7 +108,8 @@ class FirebaseSource {
             project.projectStartDate,
             project.projectEndDate,
             project.projectCreateDate,
-            uid!!
+            uid!!,
+            project.techId
         )
 
         refProjectDoc.set(project__).addOnCompleteListener { task ->
@@ -160,6 +161,12 @@ class FirebaseSource {
               FirestoreRecyclerOptions.Builder<ProjectLog>().setQuery(query, ProjectLog::class.java).build()
   */
         return query
+    }
+
+    fun getTaskDivideCard(projectId:String):Query{
+        val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+
+        return db.collection("Project").whereEqualTo("projectId",projectId)
     }
 
 }

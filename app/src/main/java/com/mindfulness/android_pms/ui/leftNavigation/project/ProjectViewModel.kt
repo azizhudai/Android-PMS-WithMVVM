@@ -19,9 +19,7 @@ class ProjectViewModel(
         repository.currentUser()
     }*/
 
-
     val _projectList = MutableLiveData<Query>().apply {
-
 
         //var projectStr: ArrayList<Project> = ArrayList()
         var db: FirebaseFirestore = FirebaseFirestore.getInstance()

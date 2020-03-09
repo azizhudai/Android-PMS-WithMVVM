@@ -1,6 +1,7 @@
-package com.mindfulness.android_pms.ui.leftNavigation.project
+package com.mindfulness.android_pms.ui.leftNavigation.project.task.ui.kanban.fragments.adapter
 
 import android.content.Context
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,9 +12,13 @@ import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
 import com.mindfulness.android_pms.R
 import com.mindfulness.android_pms.data.pojo.Project
+import com.mindfulness.android_pms.data.pojo.TaskDivideCard
+import com.mindfulness.android_pms.data.pojo.TaskKanban
 
 
 //(//private val userIdArray: ArrayList<String>,
@@ -21,12 +26,12 @@ import com.mindfulness.android_pms.data.pojo.Project
 //    private val projectName: ArrayList<Project>,
 //    private val mCtx: Context
 //)
-class ProjectRecyclerAdapter(
-    options: FirestoreRecyclerOptions<Project>,
+class DivideInfiniteRecyclerAdapter(
+    options: FirestoreRecyclerOptions<TaskDivideCard>,
     //var projectList: MutableList<Project?>,
     private val mCtx: Context
 ) :
-    FirestoreRecyclerAdapter<Project, ProjectRecyclerAdapter.PostHolder>(options) {
+    FirestoreRecyclerAdapter<TaskDivideCard, DivideInfiniteRecyclerAdapter.PostHolder>(options) {
 
     var listener: OnItemClickListener? = null
     var editClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
@@ -37,80 +42,29 @@ class ProjectRecyclerAdapter(
         viewType: Int
     ): PostHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val view = inflater.inflate(R.layout.rv_project_row, parent, false)
+        val view = inflater.inflate(R.layout.rv_infinite_divide_row, parent, false)
         return PostHolder(view)
     }
 
-    /* override fun getItemCount(): Int {
-         return projectName.size
-     }*/
-
-    /*fun removeItem(position: Int) {
-        projectName.removeAt(position)
-        notifyDataSetChanged()
-    }*/
-
-    /*override fun onBindViewHolder(holder: ProjectRecyclerAdapter.PostHolder, position: Int) {
-
-        // holder.rvProjectName?.text = projectName.get(position).projectName
-
-        holder.buttonViewOption!!.setOnClickListener(View.OnClickListener {
-            //creating a popup menu
-            //creating a popup menu
-            val popup = PopupMenu(mCtx, holder.buttonViewOption)
-            //inflating menu from xml resource
-            //inflating menu from xml resource
-            popup.inflate(R.menu.rv_options_menu)
-            //adding click listener
-            //adding click listener
-            popup.setOnMenuItemClickListener(object : PopupMenu.OnMenuItemClickListener {
-                override fun onMenuItemClick(item: MenuItem): Boolean {
-                    when (item.getItemId()) {
-                        R.id.menu1 -> {
-                            editClickStatus.value = hashMapOf(
-                                "pid" to projectName.get(position).projectId,
-                                "statu" to true
-                            )
-                        }
-                        R.id.menu2 -> {
-                            deleteClickStatus.value = hashMapOf(
-                                "pid" to projectName.get(position).projectId,
-                                "position" to position,
-                                "pname" to projectName.get(position).projectName,
-                                "statu" to true
-                            )
-                        }
-
-                    }
-                    return false
-                }
-            })
-            //displaying the popup
-            //displaying the popup
-            popup.show()
-
-        })
-    }*/
-
     class PostHolder(view: View) : RecyclerView.ViewHolder(view) {
         //View Holder class
-        var rvProjectName: TextView? = null
+        var tv_cardTitle: TextView? = null
         var buttonViewOption: TextView? = null
-        var card_viewProjectList:CardView? = null
+        var cv_infinite: CardView? = null
 
         init {
-            rvProjectName = view.findViewById(R.id.rv_project_name_text)
+            tv_cardTitle = view.findViewById(R.id.tv_cardTitle)
             buttonViewOption = view.findViewById(R.id.textViewOptions)
-            card_viewProjectList = view.findViewById(R.id.card_viewProjectList)
-           /* view.setOnClickListener(View.OnClickListener(fun(v: View) {
+            cv_infinite = view.findViewById(R.id.cv_infinite)
+            /* view.setOnClickListener(View.OnClickListener(fun(v: View) {
 
-            }))*/
+             }))*/
         }
     }
 
-     interface OnItemClickListener {
-         fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int)
-     }
+    interface OnItemClickListener {
+        fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int)
+    }
 
     fun setOnItemClickListener(listener: OnItemClickListener) {
 
@@ -122,11 +76,12 @@ class ProjectRecyclerAdapter(
     }*/
 
 
-    override fun onBindViewHolder(holder: PostHolder, position: Int, project: Project) {
+    override fun onBindViewHolder(holder: PostHolder, position: Int, taskCard: TaskDivideCard) {
 
-        holder.rvProjectName!!.text = project.projectName
+        holder.tv_cardTitle!!.text = taskCard.CardTitle
         //projectList = project
 
+        holder.cv_infinite!!.setBackgroundColor(Color.RED)
         holder.buttonViewOption!!.setOnClickListener(View.OnClickListener {
             //creating a popup menu
             //creating a popup menu
@@ -140,15 +95,13 @@ class ProjectRecyclerAdapter(
                 when (item.getItemId()) {
                     R.id.menu1 -> {
                         editClickStatus.value = hashMapOf(
-                            "pid" to project.projectId,
+                            "pid" to taskCard.projectId,
                             "statu" to true
                         )
                     }
                     R.id.menu2 -> {
                         deleteClickStatus.value = hashMapOf(
-                            "pid" to project.projectId,
-                            "position" to position,
-                            "pname" to project.projectName,
+                            "cid" to taskCard.cardId,
                             "statu" to true
                         )
                     }
@@ -162,11 +115,14 @@ class ProjectRecyclerAdapter(
 
         })
 
-        holder.card_viewProjectList!!.setOnClickListener {
+        holder.cv_infinite!!.setOnClickListener {
             val position = holder.adapterPosition
             if (position != RecyclerView.NO_POSITION && listener != null) {
 
-                listener!!.onItemClick(documentSnapshot = snapshots.getSnapshot(position),position = position)
+                listener!!.onItemClick(
+                    documentSnapshot = snapshots.getSnapshot(position),
+                    position = position
+                )
             }
         }
 
@@ -175,6 +131,46 @@ class ProjectRecyclerAdapter(
     fun deleteItem(position: Int) {
         snapshots.getSnapshot(position).reference.delete()
     }
+
+    fun changeStatus(statusId: String, position: Int) {
+
+        //val myId: String
+        val taskId = snapshots.getSnapshot(position).id
+        val refTask =
+            FirebaseFirestore.getInstance().collection("TaskKanban")
+        //val refProjectLog = db.collection("ProjectLog")
+        var refTaskDoc: DocumentReference
+
+        refTaskDoc = refTask.document(taskId)
+        //myId = taskId
+
+       /* var task2 = TaskKanban(
+            task.,
+            ,
+            statusId,
+            ,
+        ,
+        ,
+
+        )*/
+
+        /*var firebaseAuth = FirebaseAuth.getInstance()*/
+        /*var uid = firebaseAuth.uid
+        var project__ = Project(
+            myId,
+            project.projectName,
+            project.projectDetail,
+            project.projectStartDate,
+            project.projectEndDate,
+            project.projectCreateDate,
+            uid!!,
+            project.techId
+        )*/
+
+        refTaskDoc.update("taskStatus",statusId)
+
+    }
+
 
     /* override fun onChildChanged(
          type: ChangeEventType,
