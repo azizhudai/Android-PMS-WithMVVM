@@ -2,14 +2,13 @@ package com.mindfulness.android_pms.ui.leftNavigation.project
 
 import android.app.AlertDialog
 import android.content.Intent
-import android.graphics.Canvas
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -17,15 +16,19 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.R
 import com.mindfulness.android_pms.data.pojo.Project
+import com.mindfulness.android_pms.ui.leftNavigation.project.ProjectRecyclerAdapter.OnItemClickListener
 import com.mindfulness.android_pms.ui.leftNavigation.project.event.ProjectAddActivity
-import java.util.*
-import kotlin.collections.ArrayList
+import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_4.DivideMainActivity
+import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteMainActivity
+import com.mindfulness.android_pms.ui.leftNavigation.project.task.kanban.TaskManagementActivity
 
-
+//, OnItemClickListener
+@Suppress("DEPRECATION")
 class ProjectFragment : Fragment() {
 
     private lateinit var projectViewModel: ProjectViewModel
@@ -36,7 +39,7 @@ class ProjectFragment : Fragment() {
     //private lateinit var db: FirebaseFirestore
     //private val projectNameArray: ArrayList<String> = ArrayList()
     var adapter: ProjectRecyclerAdapter? = null
-    var projectList: MutableList<Project?> = ArrayList()
+    ///var projectList: MutableList<Project?> = ArrayList()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -121,33 +124,80 @@ class ProjectFragment : Fragment() {
 
     private fun getDataFromFirestore(rv_project: RecyclerView) {
 
-
         var query = projectDoc.orderBy(
             "projectCreateDate",
             Query.Direction.DESCENDING
         ).whereEqualTo("createUserId", firebaseAuth.uid)
 
-        /*var aaa = query.get().addOnCompleteListener { task ->
-            if (task.isComplete && task.isSuccessful) {
-task.getResult()
-            }
-            //   task.getResult(Project::class.java)
-        }*/
         var options =
             FirestoreRecyclerOptions.Builder<Project>().setQuery(query, Project::class.java).build()
         adapter = ProjectRecyclerAdapter(options = options, mCtx = context!!)
-        var project: Project = Project()
-        //projectList.addAll(options.snapshots.toArray(arrayOf(project)))//.onEach { project ->
-        /*   project.copy(project.projectId,project.projectName)
-       })*/
-        projectList.add(0, project.copy("1111", "sdad", "", "", "", "", ""))
-        projectList.add(0, project.copy("111122", "sdad222", "", "", "", "", ""))
 
         rv_project.setHasFixedSize(true)
         var layoutManager = LinearLayoutManager(context!!.applicationContext)
         rv_project.layoutManager = layoutManager
         rv_project.adapter = adapter
 
+        adapter!!.setOnItemClickListener(object : OnItemClickListener {
+            override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
+
+                val project = documentSnapshot.toObject(Project::class.java)
+                val id = documentSnapshot.id
+                val techId = project?.techId.let { project?.techId.toString().toInt() } //documentSnapshot.get("techId").toString().toInt() //as? Int ?: -1
+                Toast.makeText(
+                    context,
+                    "id: $id"+"type: $techId",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                when (techId) {
+                    0 -> {
+                        Intent(activity, TaskManagementActivity::class.java).also { itt ->
+                            //MainMenuActivity
+                            //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            itt.putExtra("pid", id)
+                            itt.putExtra("pname", project!!.projectName)
+                            startActivity(itt)
+                        }
+                    }
+                    1 -> {
+                        Intent(activity, DivideMainActivity::class.java).also { itt ->
+                            //MainMenuActivity
+                            //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            itt.putExtra("pid", id)
+                            itt.putExtra("pname", project!!.projectName)
+                            startActivity(itt)
+                        }
+                    }
+                    2 -> {
+                        Intent(activity, DivideInfiniteMainActivity::class.java).also { itt ->
+                            //MainMenuActivity
+                            //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            itt.putExtra("pid", id)
+                            itt.putExtra("pname", project!!.projectName)
+                            startActivity(itt)
+                        }
+                    }
+                    /*Intent(activity, TaskManagementActivity::class.java).also { itt ->
+                        //MainMenuActivity
+                        //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        itt.putExtra("pid", id)
+                        itt.putExtra("pname", project!!.projectName)
+                        startActivity(itt)
+                    }*/
+                }
+                /*Intent(activity, TaskManagementActivity::class.java).also { itt ->
+                    //MainMenuActivity
+                    //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    itt.putExtra("pid", id)
+                    itt.putExtra("pname", project!!.projectName)
+                    startActivity(itt)
+                }*/
+
+
+
+            }
+        })
     }
 
     override fun onStart() {
@@ -155,41 +205,34 @@ task.getResult()
         adapter!!.startListening()
     }
 
-    /* override fun onResume() {
-         super.onResume()
-         adapter!!.startListening()
-     }*/
-
     override fun onStop() {
         super.onStop()
         if (adapter != null)
             adapter!!.stopListening()
     }
 
-    override fun onResume() {
+    /*override fun onResume() {
         super.onResume()
         adapter!!.startListening()
         adapter!!.notifyDataSetChanged()
-    }
-
+    }*/
 
     private fun setRecyclerViewItemTouchListener(rv_project: RecyclerView) {
-
         //1
         val itemTouchCallback = object :
-            ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT ) {
+            ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             override fun onMove(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
                 viewHolder1: RecyclerView.ViewHolder
             ): Boolean {
                 //2
-             /*   val position_dragged = viewHolder.adapterPosition
-                val position_target = viewHolder1.adapterPosition
+                /*   val position_dragged = viewHolder.adapterPosition
+                   val position_target = viewHolder1.adapterPosition
 
 
-                Collections.swap(projectList!!, position_dragged, position_target)
-                adapter!!.notifyItemMoved(position_dragged, position_target)*/
+                   Collections.swap(projectList!!, position_dragged, position_target)
+                   adapter!!.notifyItemMoved(position_dragged, position_target)*/
                 return false
             }
 
@@ -228,29 +271,6 @@ task.getResult()
                 // Set other dialog properties
                 alertDialog.setCancelable(false)
                 alertDialog.show()
-
-
-            }
-
-            override fun onChildDraw(
-                c: Canvas,
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                dX: Float,
-                dY: Float,
-                actionState: Int,
-                isCurrentlyActive: Boolean
-            ) {
-                super.onChildDraw(
-                    c,
-                    recyclerView,
-                    viewHolder,
-                    dX,
-                    dY,
-                    actionState,
-                    isCurrentlyActive
-                )
-
             }
         }
 
@@ -259,4 +279,8 @@ task.getResult()
         itemTouchHelper.attachToRecyclerView(rv_project)
     }
 
+  /*  override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+*/
 }

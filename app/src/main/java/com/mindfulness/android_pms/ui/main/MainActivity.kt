@@ -2,7 +2,6 @@ package com.mindfulness.android_pms.ui.main
 
 import android.os.Bundle
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
 import androidx.navigation.findNavController
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -15,9 +14,13 @@ import androidx.navigation.ui.AppBarConfiguration
 import com.mindfulness.android_pms.R
 import androidx.appcompat.widget.Toolbar
 import com.mindfulness.android_pms.utils.startProjectAddActivity
+import android.widget.TextView
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
-
+    private val firebaseAuth: FirebaseAuth by lazy {
+        FirebaseAuth.getInstance()
+    }
     //
    /* override val kodein by kodein() KodeinAware
     private val factory : HeaderViewModelFactory by instance()
@@ -42,7 +45,12 @@ class MainActivity : AppCompatActivity() {
         val navView: NavigationView = findViewById(R.id.nav_view)
         val navController = findNavController(R.id.nav_host_fragment)
 
+        val mHeaderView = navView.getHeaderView(0)
 
+        val mDrawerHeaderTitle = mHeaderView.findViewById(R.id.tvNav_header_title) as TextView
+        val mDrawerHeaderSubTitle = mHeaderView.findViewById(R.id.tvNav_header_subtitle) as TextView
+        mDrawerHeaderTitle.text = firebaseAuth.currentUser?.displayName
+        mDrawerHeaderSubTitle.text = firebaseAuth.currentUser?.email
 
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.

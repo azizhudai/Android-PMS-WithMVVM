@@ -2,15 +2,14 @@ package com.mindfulness.android_pms.ui.leftNavigation.project.event
 
 import android.app.DatePickerDialog
 import android.os.SystemClock
+import android.view.View
+import android.widget.AdapterView
 import android.widget.DatePicker
-import androidx.lifecycle.LiveData
+import androidx.databinding.Bindable
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.data.pojo.Project
-import com.mindfulness.android_pms.data.pojo.ProjectLog
 import com.mindfulness.android_pms.data.repositories.ProjectRepository
 import com.mindfulness.android_pms.ui.auth.AuthListener
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -29,6 +28,8 @@ class ProjectAddViewModel(
     var projectDetail: String? = null
     var startDate: String? = "Start Date"
     var endDate: String? = "End Date"
+    var techId: Int? = 0
+    var selectedItemPositionSpinner = 0
     var status = MutableLiveData<String?>()
     var startDateLiveData = MutableLiveData<String>()
     var endDateLiveData = MutableLiveData<String>()
@@ -53,6 +54,36 @@ class ProjectAddViewModel(
 
     // variable to track event time
     private var mLastClickTime: Long = 0
+
+    fun onSelectItem(
+        parent: AdapterView<*>?,
+        view: View?,
+        pos: Int,
+        id: Long
+    ) { //pos                                 get selected item position
+//view.getText()                      get lable of selected item
+//parent.getAdapter().getItem(pos)    get item by pos
+//parent.getAdapter().getCount()      get item count
+//parent.getCount()                   get item count
+//parent.getSelectedItem()            get selected item
+//and other...
+        parent!!.setSelection(0)
+    }
+
+    @Bindable
+    fun getSelectedItemPosition(): Int {
+        return selectedItemPositionSpinner
+    }
+
+   /* fun setSelectedItemPosition(selectedItemPosition: Int) {
+        selectedItemPositionSpinner = selectedItemPosition
+        //notifyPropertyChanged(BR.selectedItemPosition)
+    }*/
+    /*fun setSelectedItemPosition(selectedItemPosition: Int) {
+        selectedItemPositionSpinner = selectedItemPosition
+       // var BR :Spinner
+        notifyPropertyChanged(sp.selectedItemPosition)
+    }*/
 
     fun insertClick(pid: String? = null) {
 
@@ -79,7 +110,8 @@ class ProjectAddViewModel(
             startDateLiveData.value,
             endDateLiveData.value,
             Calendar.getInstance().time.toString(),
-            ""
+            "",
+            getSelectedItemPosition().toLong()
         )
         // }
         /* if(pid != null){
@@ -359,7 +391,7 @@ class ProjectAddViewModel(
         db.collection("Project").get() //.whereEqualTo("projectId", pid)
             .addOnSuccessListener { documents ->
 
-                if (documents != null) {
+               // if (documents != null) {
 
                     var i = 0
                     for (document in documents) {
@@ -371,13 +403,14 @@ class ProjectAddViewModel(
                             document.get("projectStartDate") as String?,
                             document.get("projectEndDate") as String?,
                             document.get("projectCreateDate") as String,
-                            ""
+                            "",
+                            document.get("techId") as Long?
                         )
 
                         i++
                     }
 
-                }
+               // }
 
             }
     }
@@ -401,12 +434,12 @@ class ProjectAddViewModel(
                             document.get("projectStartDate") as String?,
                             document.get("projectEndDate") as String?,
                             document.get("projectCreateDate") as String,
-                            ""
+                            "",
+                           document.get("techId") as Long
                         )
 
                         i++
                     }
-
                 }
 
             }

@@ -1,6 +1,5 @@
 package com.mindfulness.android_pms.data.firebase
 
-import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -8,8 +7,9 @@ import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.data.pojo.Project
-import com.mindfulness.android_pms.data.pojo.ProjectLog
+import com.mindfulness.android_pms.data.pojo.TaskDivideCard
 import io.reactivex.Completable
+import java.util.*
 
 class FirebaseSource {
     var projectStr: ArrayList<String> = ArrayList()
@@ -84,12 +84,14 @@ class FirebaseSource {
         }
     }
 
+    //fun TEntityInsert(TEntity:T)
+
     fun projectInsert(project: Project) = Completable.create { emitter ->
 
         val myId: String
         val refProject =
             db.collection("Project")
-        val refProjectLog = db.collection("ProjectLog")
+        //val refProjectLog = db.collection("ProjectLog")
         var refProjectDoc: DocumentReference
         if (project.projectId.isNullOrEmpty()) {
             refProjectDoc = refProject.document()
@@ -108,7 +110,8 @@ class FirebaseSource {
             project.projectStartDate,
             project.projectEndDate,
             project.projectCreateDate,
-            uid!!
+            uid!!,
+            project.techId
         )
 
         refProjectDoc.set(project__).addOnCompleteListener { task ->
@@ -160,6 +163,55 @@ class FirebaseSource {
               FirestoreRecyclerOptions.Builder<ProjectLog>().setQuery(query, ProjectLog::class.java).build()
   */
         return query
+    }
+
+    fun getTaskDivideCard(projectId: String): Query {
+        val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+
+        return db.collection("Project").whereEqualTo("projectId", projectId)
+    }
+
+    fun getTaskInfCardList(projectId: String): Query {
+        return db.collection("TaskDivideCard").whereEqualTo(
+            "projectId",
+            projectId
+        )
+    }
+
+    fun setCardInsert(CardClass: TaskDivideCard) = Completable.create { emitter ->
+
+        val myId: String
+        val refCard =
+            db.collection("TaskDivideCard")
+        //val refProjectLog = db.collection("ProjectLog")
+        var refCardDoc: DocumentReference
+        if (CardClass.cardId.isNullOrEmpty()) {
+            refCardDoc = refCard.document()
+            myId = refCardDoc.id
+        } else {
+            refCardDoc = refCard.document(CardClass.cardId!!)
+            myId = CardClass.cardId!!
+        }
+
+        /*var firebaseAuth = FirebaseAuth.getInstance()*/
+        var uid = firebaseAuth.uid
+        var card__ = TaskDivideCard(
+            myId,
+            uid!!,
+            CardClass.projectId,
+            CardClass.cardTitle,
+            CardClass.cardDetail,
+            0
+        )
+
+        refCardDoc.set(card__).addOnCompleteListener { task ->
+            if (task.isComplete && task.isSuccessful)
+
+                emitter.onComplete()
+        }.addOnFailureListener { exception ->
+            emitter.onError(exception)
+        }
+
     }
 
 }

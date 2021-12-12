@@ -2,11 +2,15 @@ package com.mindfulness.android_pms
 
 import android.app.Application
 import com.mindfulness.android_pms.data.firebase.FirebaseSource
+import com.mindfulness.android_pms.data.pojo.TaskDivideCard
 import com.mindfulness.android_pms.data.repositories.ProjectRepository
+import com.mindfulness.android_pms.data.repositories.TaskRepository
 import com.mindfulness.android_pms.data.repositories.UserRepository
 import com.mindfulness.android_pms.ui.auth.AuthViewModelFactory
 import com.mindfulness.android_pms.ui.home.HomeViewModelFactory
 import com.mindfulness.android_pms.ui.leftNavigation.project.event.ProjectAddViewModelFactory
+import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteViewModel
+import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteViewModelFactory
 import com.mindfulness.android_pms.ui.leftNavigation.send.SendViewModel
 import com.mindfulness.android_pms.ui.leftNavigation.send.SendViewModelFactory
 import org.kodein.di.Kodein
@@ -26,9 +30,11 @@ class FirebaseApplication : Application(), KodeinAware {
         bind() from singleton { FirebaseSource() }
         bind() from singleton { UserRepository(instance()) }
         bind() from singleton { ProjectRepository(instance()) }
+        bind() from singleton { TaskRepository(instance()) }
         bind() from provider { ProjectAddViewModelFactory(instance()) }
         bind() from provider { AuthViewModelFactory(instance()) }
         bind() from provider { HomeViewModelFactory(instance()) }
+        bind() from provider { DivideInfiniteViewModelFactory(instance()) }
       /* val aa = bind() from provider {
            SendViewModelFactory(
                instance()

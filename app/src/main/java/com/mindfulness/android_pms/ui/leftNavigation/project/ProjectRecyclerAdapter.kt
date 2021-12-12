@@ -6,10 +6,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
 import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
+import com.google.firebase.firestore.DocumentSnapshot
 import com.mindfulness.android_pms.R
 import com.mindfulness.android_pms.data.pojo.Project
 
@@ -26,6 +28,7 @@ class ProjectRecyclerAdapter(
 ) :
     FirestoreRecyclerAdapter<Project, ProjectRecyclerAdapter.PostHolder>(options) {
 
+    var listener: OnItemClickListener? = null
     var editClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
     var deleteClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
 
@@ -93,14 +96,31 @@ class ProjectRecyclerAdapter(
         //View Holder class
         var rvProjectName: TextView? = null
         var buttonViewOption: TextView? = null
+        var card_viewProjectList:CardView? = null
 
         init {
-
             rvProjectName = view.findViewById(R.id.rv_project_name_text)
             buttonViewOption = view.findViewById(R.id.textViewOptions)
-        }
+            card_viewProjectList = view.findViewById(R.id.card_viewProjectList)
+           /* view.setOnClickListener(View.OnClickListener(fun(v: View) {
 
+            }))*/
+        }
     }
+
+     interface OnItemClickListener {
+         fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int)
+     }
+
+    fun setOnItemClickListener(listener: OnItemClickListener) {
+
+        this.listener = listener
+    }
+
+    /*interface OnItemClickListener {
+        fun onItemClicked(documentSnapshot: DocumentSnapshot, project: Project)
+    }*/
+
 
     override fun onBindViewHolder(holder: PostHolder, position: Int, project: Project) {
 
@@ -141,6 +161,15 @@ class ProjectRecyclerAdapter(
             popup.show()
 
         })
+
+        holder.card_viewProjectList!!.setOnClickListener {
+            val position = holder.adapterPosition
+            if (position != RecyclerView.NO_POSITION && listener != null) {
+
+                listener!!.onItemClick(documentSnapshot = snapshots.getSnapshot(position),position = position)
+            }
+        }
+
     }
 
     fun deleteItem(position: Int) {

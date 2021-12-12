@@ -7,10 +7,10 @@ data class Project(
     var projectStartDate: String?,
     var projectEndDate: String?,
     var projectCreateDate: String,
-    var createUserId: String
+    var createUserId: String,
+    var techId: Long?
 ) {
-
-    constructor(): this("","","", "","","","" )
+    constructor() : this("", "", "", "", "", "", "", 0)
 
     /*
     private var projectId:String
