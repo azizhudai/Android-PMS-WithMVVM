@@ -1,0 +1,1463 @@
+Index: app/src/main/java/com/mindfulness/android_pms/data/firebase/FirebaseSource.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.data.firebase\r\n\r\nimport com.google.android.gms.auth.api.signin.GoogleSignInAccount\r\nimport com.google.firebase.auth.FirebaseAuth\r\nimport com.google.firebase.auth.GoogleAuthProvider\r\nimport com.google.firebase.firestore.DocumentReference\r\nimport com.google.firebase.firestore.FirebaseFirestore\r\nimport com.google.firebase.firestore.Query\r\nimport com.mindfulness.android_pms.data.pojo.Project\r\nimport io.reactivex.Completable\r\n\r\nclass FirebaseSource {\r\n    var projectStr: ArrayList<String> = ArrayList()\r\n    private val firebaseAuth: FirebaseAuth by lazy {\r\n        FirebaseAuth.getInstance()\r\n    }\r\n\r\n    private val db: FirebaseFirestore by lazy {\r\n        FirebaseFirestore.getInstance()\r\n    }\r\n\r\n    fun login(email: String, password: String) = Completable.create { emitter ->\r\n        firebaseAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener {\r\n            if (!emitter.isDisposed) {\r\n                if (it.isSuccessful)\r\n                    emitter.onComplete()\r\n                else\r\n                    emitter.onError(it.exception!!)\r\n            }\r\n        }\r\n    }\r\n\r\n    fun register(email: String, password: String) = Completable.create { emitter ->\r\n        firebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener {\r\n            if (!emitter.isDisposed) {\r\n                if (it.isSuccessful) {\r\n                    /*val user = hashMapOf<String, Any>(\r\n                        \"email\" to email,\r\n                        \"createdTime\" to Timestamp.now()\r\n                    )*/\r\n                    /* val user = User( email, Timestamp.now())\r\n\r\n                     db.collection(\"Users\")\r\n                         .add(user).addOnCompleteListener { task ->\r\n                             if (task.isComplete && task.isSuccessful)\r\n\r\n                         }.addOnFailureListener { exception -> emitter.onError(exception) }*/\r\n\r\n                    emitter.onComplete()\r\n                } else\r\n                    emitter.onError(it.exception!!)\r\n            }\r\n        }\r\n    }\r\n\r\n    /*\r\n    * ref.set(project).addOnCompleteListener { task ->\r\n                if (task.isComplete && task.isSuccessful)\r\n\r\n                   Toast.makeText(context,\"Başarılı\",Toast.LENGTH_SHORT).show()\r\n            }.addOnFailureListener {exception ->  Toast.makeText(context,exception.toString(),Toast.LENGTH_SHORT).show() }\r\n    * */\r\n    fun logout() = firebaseAuth.signOut()\r\n\r\n    fun currentUser() = firebaseAuth.currentUser\r\n\r\n    fun firebaseAuthWithGoogle(acct: GoogleSignInAccount) = Completable.create { emitter ->\r\n        val credential = GoogleAuthProvider.getCredential(acct.idToken, null)\r\n        firebaseAuth.signInWithCredential(credential).addOnCompleteListener {\r\n            if (it.isSuccessful) {\r\n                emitter.onComplete()\r\n                /*Toast.makeText(\r\n                    this,\r\n                    \"Google Sihn in Success ${it.result.toString()}\",\r\n                    Toast.LENGTH_LONG\r\n                ).show()*/\r\n                // startActivity(HomeActivity.getLaunchIntent(this))\r\n            } else {\r\n                emitter.onError(it.exception!!)\r\n                //Toast.makeText(this, \"Google sign in failed:(...\", Toast.LENGTH_LONG).show()\r\n            }\r\n        }\r\n    }\r\n\r\n    //fun TEntityInsert(TEntity:T)\r\n\r\n    fun projectInsert(project: Project) = Completable.create { emitter ->\r\n\r\n        val myId: String\r\n        val refProject =\r\n            db.collection(\"Project\")\r\n        //val refProjectLog = db.collection(\"ProjectLog\")\r\n        var refProjectDoc: DocumentReference\r\n        if (project.projectId.isNullOrEmpty()) {\r\n            refProjectDoc = refProject.document()\r\n            myId = refProjectDoc.id\r\n        } else {\r\n            refProjectDoc = refProject.document(project.projectId)\r\n            myId = project.projectId\r\n        }\r\n\r\n        /*var firebaseAuth = FirebaseAuth.getInstance()*/\r\n        var uid = firebaseAuth.uid\r\n        var project__ = Project(\r\n            myId,\r\n            project.projectName,\r\n            project.projectDetail,\r\n            project.projectStartDate,\r\n            project.projectEndDate,\r\n            project.projectCreateDate,\r\n            uid!!,\r\n            project.techId\r\n        )\r\n\r\n        refProjectDoc.set(project__).addOnCompleteListener { task ->\r\n            if (task.isComplete && task.isSuccessful)\r\n\r\n                emitter.onComplete()\r\n        }.addOnFailureListener { exception ->\r\n            emitter.onError(exception)\r\n        }\r\n    }\r\n\r\n    fun userProjectList(userId: String): ArrayList<String> {\r\n\r\n        var db: FirebaseFirestore = FirebaseFirestore.getInstance()\r\n\r\n        db.collection(\"Project\")//.whereEqualTo(\"createUserId\", firebaseAuth.uid)\r\n            .addSnapshotListener { snapshot, exception ->\r\n                if (exception != null) {\r\n                    projectStr.add(\"Error\")\r\n                } else {\r\n                    if (snapshot != null) {\r\n                        if (!snapshot.isEmpty) {\r\n                            val documents = snapshot.documents\r\n                            var i = 0\r\n                            for (document in documents) {\r\n                                // val comment = document.get(\"comment\") as String\r\n                                projectStr.add(document.get(\"projectName\") as String)\r\n                                // val downloadUrl = document.get(\"downloadUrl\") as String\r\n                                //val timestamp = document.get(\"date\") as Timestamp\r\n                                //val date = timestamp.toDate()\r\n                                i++\r\n                            }\r\n                        }\r\n                    }\r\n                }\r\n            }\r\n        return projectStr\r\n    }\r\n\r\n    fun getProjectLogList(projectId: String): Query {\r\n\r\n        var projectLogDoc = db.collection(\"ProjectLog\")\r\n        var query = projectLogDoc.orderBy(\r\n            \"createDate\",\r\n            Query.Direction.DESCENDING\r\n        ).whereEqualTo(\"projectId\", projectId) //.whereEqualTo(\"createUserId\", firebaseAuth.uid)\r\n\r\n        /*  var options =\r\n              FirestoreRecyclerOptions.Builder<ProjectLog>().setQuery(query, ProjectLog::class.java).build()\r\n  */\r\n        return query\r\n    }\r\n\r\n    fun getTaskDivideCard(projectId:String):Query{\r\n        val db: FirebaseFirestore = FirebaseFirestore.getInstance()\r\n\r\n        return db.collection(\"Project\").whereEqualTo(\"projectId\",projectId)\r\n    }\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/data/firebase/FirebaseSource.kt b/app/src/main/java/com/mindfulness/android_pms/data/firebase/FirebaseSource.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/data/firebase/FirebaseSource.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/data/firebase/FirebaseSource.kt	
+@@ -7,7 +7,9 @@
+ import com.google.firebase.firestore.FirebaseFirestore
+ import com.google.firebase.firestore.Query
+ import com.mindfulness.android_pms.data.pojo.Project
++import com.mindfulness.android_pms.data.pojo.TaskDivideCard
+ import io.reactivex.Completable
++import java.util.*
+ 
+ class FirebaseSource {
+     var projectStr: ArrayList<String> = ArrayList()
+@@ -163,10 +165,53 @@
+         return query
+     }
+ 
+-    fun getTaskDivideCard(projectId:String):Query{
++    fun getTaskDivideCard(projectId: String): Query {
+         val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+ 
+-        return db.collection("Project").whereEqualTo("projectId",projectId)
++        return db.collection("Project").whereEqualTo("projectId", projectId)
+     }
+ 
++    fun getTaskInfCardList(projectId: String): Query {
++        return db.collection("TaskDivideCard").whereEqualTo(
++            "projectId",
++            projectId
++        )
++    }
++
++    fun setCardInsert(CardClass: TaskDivideCard) = Completable.create { emitter ->
++
++        val myId: String
++        val refCard =
++            db.collection("TaskDivideCard")
++        //val refProjectLog = db.collection("ProjectLog")
++        var refCardDoc: DocumentReference
++        if (CardClass.cardId.isNullOrEmpty()) {
++            refCardDoc = refCard.document()
++            myId = refCardDoc.id
++        } else {
++            refCardDoc = refCard.document(CardClass.cardId!!)
++            myId = CardClass.cardId!!
++        }
++
++        /*var firebaseAuth = FirebaseAuth.getInstance()*/
++        var uid = firebaseAuth.uid
++        var card__ = TaskDivideCard(
++            myId,
++            uid!!,
++            CardClass.projectId,
++            CardClass.cardTitle,
++            CardClass.cardDetail,
++            0
++        )
++
++        refCardDoc.set(card__).addOnCompleteListener { task ->
++            if (task.isComplete && task.isSuccessful)
++
++                emitter.onComplete()
++        }.addOnFailureListener { exception ->
++            emitter.onError(exception)
++        }
++
++    }
++
+ }
+Index: app/src/main/res/layout/nav_header_main.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n\r\n<layout xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\r\n    xmlns:tools=\"http://schemas.android.com/tools\">\r\n\r\n    <data>\r\n\r\n        <variable\r\n            name=\"viewmodel\"\r\n            type=\"com.mindfulness.android_pms.ui.main.HeaderViewModel\" />\r\n    </data>\r\n\r\n\r\n    <LinearLayout\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"@dimen/nav_header_height\"\r\n        android:background=\"@drawable/side_nav_bar\"\r\n        android:gravity=\"bottom\"\r\n        android:orientation=\"vertical\"\r\n        android:paddingLeft=\"@dimen/activity_horizontal_margin\"\r\n        android:paddingTop=\"@dimen/activity_vertical_margin\"\r\n        android:paddingRight=\"@dimen/activity_horizontal_margin\"\r\n        android:paddingBottom=\"@dimen/activity_vertical_margin\"\r\n        android:theme=\"@style/ThemeOverlay.AppCompat.Dark\">\r\n\r\n        <ImageView\r\n            android:id=\"@+id/imageView\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:contentDescription=\"@string/nav_header_desc\"\r\n            android:paddingTop=\"@dimen/nav_header_vertical_spacing\"\r\n            app:srcCompat=\"@mipmap/ic_launcher_round\" />\r\n\r\n        <TextView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:paddingTop=\"@dimen/nav_header_vertical_spacing\"\r\n            android:text=\"@string/nav_header_title\"\r\n            android:textAppearance=\"@style/TextAppearance.AppCompat.Body1\" />\r\n\r\n        <TextView\r\n            android:id=\"@+id/tvNav_header_subtitle\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            tools:text=\"deneme@gmail.com\"\r\n            android:text=\"@{viewmodel.user.email}\"\r\n            android:textAppearance=\"@style/TextAppearance.AppCompat.Headline\"\r\n            />\r\n\r\n    </LinearLayout>\r\n\r\n</layout>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/nav_header_main.xml b/app/src/main/res/layout/nav_header_main.xml
+--- a/app/src/main/res/layout/nav_header_main.xml	
++++ b/app/src/main/res/layout/nav_header_main.xml	
+@@ -33,6 +33,7 @@
+             app:srcCompat="@mipmap/ic_launcher_round" />
+ 
+         <TextView
++            android:id="@+id/tv_nav_title"
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:paddingTop="@dimen/nav_header_vertical_spacing"
+@@ -40,6 +41,7 @@
+             android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
+ 
+         <TextView
++            android:textSize="12dp"
+             android:id="@+id/tvNav_header_subtitle"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+Index: app/src/main/java/com/mindfulness/android_pms/ui/main/MainActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.ui.main\r\n\r\nimport android.os.Bundle\r\nimport com.google.android.material.floatingactionbutton.FloatingActionButton\r\nimport com.google.android.material.snackbar.Snackbar\r\nimport androidx.navigation.findNavController\r\nimport androidx.navigation.ui.navigateUp\r\nimport androidx.navigation.ui.setupActionBarWithNavController\r\nimport androidx.navigation.ui.setupWithNavController\r\nimport androidx.drawerlayout.widget.DrawerLayout\r\nimport com.google.android.material.navigation.NavigationView\r\nimport androidx.appcompat.app.AppCompatActivity\r\nimport android.view.Menu\r\nimport androidx.navigation.ui.AppBarConfiguration\r\nimport com.mindfulness.android_pms.R\r\nimport androidx.appcompat.widget.Toolbar\r\nimport com.mindfulness.android_pms.utils.startProjectAddActivity\r\n\r\nclass MainActivity : AppCompatActivity() {\r\n\r\n    //\r\n   /* override val kodein by kodein() KodeinAware\r\n    private val factory : HeaderViewModelFactory by instance()\r\n    private lateinit var viewModel: HeaderViewModel*/\r\n    //\r\n    private lateinit var appBarConfiguration: AppBarConfiguration\r\n\r\n    override fun onCreate(savedInstanceState: Bundle?) {\r\n        super.onCreate(savedInstanceState)\r\n        setContentView(R.layout.activity_main)\r\n        val toolbar: Toolbar = findViewById(R.id.toolbar_main)\r\n        setSupportActionBar(toolbar)\r\n\r\n        val fab: FloatingActionButton = findViewById(R.id.fab_main)\r\n        fab.setOnClickListener { view ->\r\n          /*  Snackbar.make(view, \"Replace with your own action\", Snackbar.LENGTH_LONG)\r\n                .setAction(\"Action\", null).show()\r\n*/\r\n            startProjectAddActivity()\r\n        }\r\n        val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout_main)\r\n        val navView: NavigationView = findViewById(R.id.nav_view)\r\n        val navController = findNavController(R.id.nav_host_fragment)\r\n\r\n\r\n\r\n        // Passing each menu ID as a set of Ids because each\r\n        // menu should be considered as top level destinations.\r\n        appBarConfiguration = AppBarConfiguration(\r\n            setOf(\r\n                R.id.nav_project,\r\n                R.id.nav_gallery,\r\n                R.id.nav_slideshow,\r\n                R.id.nav_tools,\r\n                R.id.nav_share,\r\n                R.id.nav_send\r\n            ), drawerLayout\r\n        )\r\n        setupActionBarWithNavController(navController, appBarConfiguration)\r\n        navView.setupWithNavController(navController)\r\n\r\n        //val tvNav_header = findViewById<TextView>(R.id.tvNav_header_subtitle)\r\n       // tvNav_header.setText(\"private\")\r\n       /* val binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)\r\n        viewModel = ViewModelProviders.of(this, factory).get(HeaderViewModel::class.java)\r\n        binding.viewmodel2 = viewModel\r\n*/\r\n    }\r\n\r\n    override fun onCreateOptionsMenu(menu: Menu): Boolean {\r\n        // Inflate the menu; this adds items to the action bar if it is present.\r\n        menuInflater.inflate(R.menu.main, menu)\r\n        return true\r\n    }\r\n\r\n    override fun onSupportNavigateUp(): Boolean {\r\n        val navController = findNavController(R.id.nav_host_fragment)\r\n        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/main/MainActivity.kt b/app/src/main/java/com/mindfulness/android_pms/ui/main/MainActivity.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/ui/main/MainActivity.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/main/MainActivity.kt	
+@@ -15,9 +15,16 @@
+ import com.mindfulness.android_pms.R
+ import androidx.appcompat.widget.Toolbar
+ import com.mindfulness.android_pms.utils.startProjectAddActivity
++import android.view.View
++
++import android.widget.TextView
++import com.google.firebase.auth.FirebaseAuth
++
+ 
+ class MainActivity : AppCompatActivity() {
+-
++    private val firebaseAuth: FirebaseAuth by lazy {
++        FirebaseAuth.getInstance()
++    }
+     //
+    /* override val kodein by kodein() KodeinAware
+     private val factory : HeaderViewModelFactory by instance()
+@@ -31,6 +38,8 @@
+         val toolbar: Toolbar = findViewById(R.id.toolbar_main)
+         setSupportActionBar(toolbar)
+ 
++
++
+         val fab: FloatingActionButton = findViewById(R.id.fab_main)
+         fab.setOnClickListener { view ->
+           /*  Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+@@ -42,7 +51,14 @@
+         val navView: NavigationView = findViewById(R.id.nav_view)
+         val navController = findNavController(R.id.nav_host_fragment)
+ 
++       // mNavigation = findViewById<View>(R.id.navigation_view) as NavigationView
++        var mHeaderView = navView.getHeaderView(0)
+ 
++        var mDrawerHeaderTitle = mHeaderView.findViewById(R.id.tv_nav_title) as TextView
++        var mDrawerHeaderEmail = mHeaderView.findViewById(R.id.tvNav_header_subtitle) as TextView
++
++        mDrawerHeaderTitle.text = firebaseAuth.currentUser?.displayName
++        mDrawerHeaderEmail.text = firebaseAuth.currentUser?.email
+ 
+         // Passing each menu ID as a set of Ids because each
+         // menu should be considered as top level destinations.
+Index: .idea/runConfigurations.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/runConfigurations.xml b/.idea/runConfigurations.xml
+deleted file mode 100644
+--- a/.idea/runConfigurations.xml	
++++ /dev/null	
+@@ -1,12 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="RunConfigurationProducerService">
+-    <option name="ignoredProducers">
+-      <set>
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.AllInPackageGradleConfigurationProducer" />
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.TestClassGradleConfigurationProducer" />
+-        <option value="org.jetbrains.plugins.gradle.execution.test.runner.TestMethodGradleConfigurationProducer" />
+-      </set>
+-    </option>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: app/src/main/res/values/strings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><resources>\r\n    <string name=\"app_name\">Android-PMS</string>\r\n\r\n    <string name=\"navigation_drawer_open\">Open navigation drawer</string>\r\n    <string name=\"navigation_drawer_close\">Close navigation drawer</string>\r\n    <string name=\"nav_header_title\">Android Studio</string>\r\n    <string name=\"nav_header_subtitle\">android.studio@android.com</string>\r\n    <string name=\"nav_header_desc\">Navigation header</string>\r\n    <string name=\"action_settings\">Settings</string>\r\n\r\n    <string name=\"menu_project\">My Project</string>\r\n    <string name=\"menu_gallery\">My Task</string>\r\n    <string name=\"menu_slideshow\">Statistic Analize</string>\r\n    <string name=\"menu_tools\">Tools</string>\r\n    <string name=\"menu_share\">My User List</string>\r\n    <string name=\"menu_send\">Sign Out</string>\r\n    <string name=\"title_activity_project_add\">ProjectAddActivity</string>\r\n\r\n    <string name=\"dialogTitle\">Are you sure you want to delete?</string>\r\n    <string name=\"dialogMessage\">Are you sure?</string>\r\n\r\n    <string-array name=\"project_tech\">\r\n        <item>Kanban</item>\r\n        <item>Divide by 4</item>\r\n    </string-array>\r\n\r\n    <string name=\"large_text\">\r\n        \"Material is the metaphor.\\n\\n\"\r\n\r\n        \"A material metaphor is the unifying theory of a rationalized space and a system of motion.\"\r\n        \"The material is grounded in tactile reality, inspired by the study of paper and ink, yet \"\r\n        \"technologically advanced and open to imagination and magic.\\n\"\r\n        \"Surfaces and edges of the material provide visual cues that are grounded in reality. The \"\r\n        \"use of familiar tactile attributes helps users quickly understand affordances. Yet the \"\r\n        \"flexibility of the material creates new affordances that supercede those in the physical \"\r\n        \"world, without breaking the rules of physics.\\n\"\r\n        \"The fundamentals of light, surface, and movement are key to conveying how objects move, \"\r\n        \"interact, and exist in space and in relation to each other. Realistic lighting shows \"\r\n        \"seams, divides space, and indicates moving parts.\\n\\n\"\r\n\r\n        \"Bold, graphic, intentional.\\n\\n\"\r\n\r\n        \"The foundational elements of print based design typography, grids, space, scale, color, \"\r\n        \"and use of imagery guide visual treatments. These elements do far more than please the \"\r\n        \"eye. They create hierarchy, meaning, and focus. Deliberate color choices, edge to edge \"\r\n        \"imagery, large scale typography, and intentional white space create a bold and graphic \"\r\n        \"interface that immerse the user in the experience.\\n\"\r\n        \"An emphasis on user actions makes core functionality immediately apparent and provides \"\r\n        \"waypoints for the user.\\n\\n\"\r\n\r\n        \"Motion provides meaning.\\n\\n\"\r\n\r\n        \"Motion respects and reinforces the user as the prime mover. Primary user actions are \"\r\n        \"inflection points that initiate motion, transforming the whole design.\\n\"\r\n        \"All action takes place in a single environment. Objects are presented to the user without \"\r\n        \"breaking the continuity of experience even as they transform and reorganize.\\n\"\r\n        \"Motion is meaningful and appropriate, serving to focus attention and maintain continuity. \"\r\n        \"Feedback is subtle yet clear. Transitions are efﬁcient yet coherent.\\n\\n\"\r\n\r\n        \"3D world.\\n\\n\"\r\n\r\n        \"The material environment is a 3D space, which means all objects have x, y, and z \"\r\n        \"dimensions. The z-axis is perpendicularly aligned to the plane of the display, with the \"\r\n        \"positive z-axis extending towards the viewer. Every sheet of material occupies a single \"\r\n        \"position along the z-axis and has a standard 1dp thickness.\\n\"\r\n        \"On the web, the z-axis is used for layering and not for perspective. The 3D world is \"\r\n        \"emulated by manipulating the y-axis.\\n\\n\"\r\n\r\n        \"Light and shadow.\\n\\n\"\r\n\r\n        \"Within the material environment, virtual lights illuminate the scene. Key lights create \"\r\n        \"directional shadows, while ambient light creates soft shadows from all angles.\\n\"\r\n        \"Shadows in the material environment are cast by these two light sources. In Android \"\r\n        \"development, shadows occur when light sources are blocked by sheets of material at \"\r\n        \"various positions along the z-axis. On the web, shadows are depicted by manipulating the \"\r\n        \"y-axis only. The following example shows the card with a height of 6dp.\\n\\n\"\r\n\r\n        \"Resting elevation.\\n\\n\"\r\n\r\n        \"All material objects, regardless of size, have a resting elevation, or default elevation \"\r\n        \"that does not change. If an object changes elevation, it should return to its resting \"\r\n        \"elevation as soon as possible.\\n\\n\"\r\n\r\n        \"Component elevations.\\n\\n\"\r\n\r\n        \"The resting elevation for a component type is consistent across apps (e.g., FAB elevation \"\r\n        \"does not vary from 6dp in one app to 16dp in another app).\\n\"\r\n        \"Components may have different resting elevations across platforms, depending on the depth \"\r\n        \"of the environment (e.g., TV has a greater depth than mobile or desktop).\\n\\n\"\r\n\r\n        \"Responsive elevation and dynamic elevation offsets.\\n\\n\"\r\n\r\n        \"Some component types have responsive elevation, meaning they change elevation in response \"\r\n        \"to user input (e.g., normal, focused, and pressed) or system events. These elevation \"\r\n        \"changes are consistently implemented using dynamic elevation offsets.\\n\"\r\n        \"Dynamic elevation offsets are the goal elevation that a component moves towards, relative \"\r\n        \"to the component’s resting state. They ensure that elevation changes are consistent \"\r\n        \"across actions and component types. For example, all components that lift on press have \"\r\n        \"the same elevation change relative to their resting elevation.\\n\"\r\n        \"Once the input event is completed or cancelled, the component will return to its resting \"\r\n        \"elevation.\\n\\n\"\r\n\r\n        \"Avoiding elevation interference.\\n\\n\"\r\n\r\n        \"Components with responsive elevations may encounter other components as they move between \"\r\n        \"their resting elevations and dynamic elevation offsets. Because material cannot pass \"\r\n        \"through other material, components avoid interfering with one another any number of ways, \"\r\n        \"whether on a per component basis or using the entire app layout.\\n\"\r\n        \"On a component level, components can move or be removed before they cause interference. \"\r\n        \"For example, a floating action button (FAB) can disappear or move off screen before a \"\r\n        \"user picks up a card, or it can move if a snackbar appears.\\n\"\r\n        \"On the layout level, design your app layout to minimize opportunities for interference. \"\r\n        \"For example, position the FAB to one side of stream of a cards so the FAB won’t interfere \"\r\n        \"when a user tries to pick up one of cards.\\n\\n\"\r\n    </string>\r\n    <string name=\"title_activity_task_management\">TaskManagementActivity</string>\r\n    <string name=\"tab_text_1\">To Do</string>\r\n    <string name=\"tab_text_2\">Doing</string>\r\n    <string name=\"tab_text_3\">Done</string>\r\n\r\n    <string name=\"task_kanban_create\">Create task</string>\r\n\r\n    <string name=\"task_divide_do_first\">Do First</string>\r\n    <string name=\"task_divide_do_later\">Do Later</string>\r\n    <string name=\"task_divide_delegate\">Delegate</string>\r\n    <string name=\"task_divide_eliminate\">Eliminate</string>\r\n</resources>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+--- a/app/src/main/res/values/strings.xml	
++++ b/app/src/main/res/values/strings.xml	
+@@ -22,6 +22,7 @@
+     <string-array name="project_tech">
+         <item>Kanban</item>
+         <item>Divide by 4</item>
++        <item>Divide by infinity</item>
+     </string-array>
+ 
+     <string name="large_text">
+Index: app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/divide_infinite/fragment/TaskRecyclerAdapter.kt
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/divide_infinite/fragment/TaskRecyclerAdapter.kt b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/divide_infinite/fragment/TaskRecyclerAdapter.kt
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/divide_infinite/fragment/TaskRecyclerAdapter.kt	
+@@ -0,0 +1,106 @@
++package com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.fragment
++
++import android.content.Context
++import android.view.LayoutInflater
++import android.view.View
++import android.view.ViewGroup
++import android.widget.PopupMenu
++import android.widget.TextView
++import androidx.cardview.widget.CardView
++import androidx.lifecycle.MutableLiveData
++import androidx.recyclerview.widget.RecyclerView
++import com.firebase.ui.firestore.FirestoreRecyclerAdapter
++import com.firebase.ui.firestore.FirestoreRecyclerOptions
++import com.google.firebase.firestore.DocumentSnapshot
++import com.mindfulness.android_pms.R
++import com.mindfulness.android_pms.data.pojo.Project
++import com.mindfulness.android_pms.data.pojo.Task
++
++class TaskRecyclerAdapter(options: FirestoreRecyclerOptions<Task>,
++    //var projectList: MutableList<Project?>,
++                          private val mCtx: Context
++) :  FirestoreRecyclerAdapter<Task, TaskRecyclerAdapter.PostHolder>(options) {
++
++    var listener: OnItemClickListener? = null
++    var editClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
++    var deleteClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()
++
++    override fun onCreateViewHolder(
++        parent: ViewGroup,
++        viewType: Int
++    ): PostHolder {
++        val inflater = LayoutInflater.from(parent.context)
++        val view = inflater.inflate(R.layout.rv_task_row, parent, false)
++        return PostHolder(view)
++    }
++
++    class PostHolder(view: View) : RecyclerView.ViewHolder(view) {
++        //View Holder class
++        var rvTaskName: TextView? = null
++        var buttonViewOption: TextView? = null
++        var card_viewTaskList: CardView? = null
++
++        init {
++            rvTaskName = view.findViewById(R.id.rv_task_name_text)
++            buttonViewOption = view.findViewById(R.id.textViewOptions)
++            card_viewTaskList = view.findViewById(R.id.card_viewTaskList)
++
++        }
++    }
++
++    interface OnItemClickListener {
++        fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int)
++    }
++
++    fun setOnItemClickListener(listener: OnItemClickListener) {
++
++        this.listener = listener
++    }
++
++    override fun onBindViewHolder(holder: PostHolder, position: Int, task: Task) {
++        holder.rvTaskName!!.text = task.taskTitle
++        //projectList = project
++        holder.buttonViewOption!!.setOnClickListener(View.OnClickListener {
++            //creating a popup menu
++            val popup = PopupMenu(mCtx, holder.buttonViewOption)
++            //inflating menu from xml resource
++            popup.inflate(R.menu.rv_options_menu)
++            //adding click listener
++            popup.setOnMenuItemClickListener { item ->
++                when (item.getItemId()) {
++                    R.id.menu1 -> {
++                        editClickStatus.value = hashMapOf(
++                            "pid" to task.taskId!!,
++                            "statu" to true
++                        )
++                    }
++                    R.id.menu2 -> {
++                        deleteClickStatus.value = hashMapOf(
++                            "pid" to task.taskId!!,
++                            "position" to position,
++                            "pname" to task.taskTitle,
++                            "statu" to true
++                        )
++                    }
++                }
++                false
++            }
++            popup.show()
++
++        })
++
++        holder.card_viewTaskList!!.setOnClickListener {
++            val position = holder.adapterPosition
++            if (position != RecyclerView.NO_POSITION && listener != null) {
++
++                listener!!.onItemClick(documentSnapshot = snapshots.getSnapshot(position),position = position)
++            }
++        }
++
++    }
++
++    fun deleteItem(position: Int) {
++        snapshots.getSnapshot(position).reference.delete()
++    }
++
++}
+Index: app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/divide_infinite/fragment/TaskViewPagerAdapter.kt
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/divide_infinite/fragment/TaskViewPagerAdapter.kt b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/divide_infinite/fragment/TaskViewPagerAdapter.kt
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/divide_infinite/fragment/TaskViewPagerAdapter.kt	
+@@ -0,0 +1,59 @@
++package com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.fragment
++
++import android.content.Context
++import android.view.LayoutInflater
++import android.view.View
++import android.view.ViewGroup
++import androidx.recyclerview.widget.RecyclerView
++import androidx.viewpager.widget.PagerAdapter
++import com.mindfulness.android_pms.R
++
++class TaskViewPagerAdapter (
++    var mContext: Context,
++    //var mListScreen: List<Task>
++    var mListFragment:List<TaskListFragment>
++) : PagerAdapter() {
++    override fun instantiateItem(container: ViewGroup, position: Int): Any {
++        val inflater =
++            mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
++        val layoutTask = inflater.inflate(R.layout.task_list_fragment, null)
++        val rvTaskList = layoutTask.findViewById<RecyclerView>(R.id.rv_task_list)
++
++
++        /*val imgSlide =
++            layoutTask.findViewById<ImageView>(R.id.intro_img)
++        val title = layoutScreen.findViewById<TextView>(R.id.intro_title)
++        val description = layoutScreen.findViewById<TextView>(R.id.intro_description)
++        title.text = mListScreen[position].title
++        description.text = mListScreen[position].description
++        imgSlide.setImageResource(mListScreen[position].screenImg)*/
++        container.addView(layoutTask)
++        return layoutTask
++    }
++
++    override fun getCount(): Int {
++        return mListFragment.size
++    }
++
++    override fun isViewFromObject(view: View, o: Any): Boolean {
++        return view === o
++    }
++
++    override fun destroyItem(
++        container: ViewGroup,
++        position: Int,
++        `object`: Any
++    ) {
++        container.removeView(`object` as View)
++    }
++
++    override fun getItemPosition(`object`: Any): Int {
++
++        var index = mListFragment.indexOf(`object`)
++        return if(index == -1)
++            PagerAdapter.POSITION_NONE
++        else
++            index
++    }
++
++}
+\ No newline at end of file
+Index: app/src/main/java/com/mindfulness/android_pms/data/pojo/Project.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.data.pojo\r\n\r\ndata class Project(\r\n    var projectId: String,\r\n    var projectName: String,\r\n    var projectDetail: String?,\r\n    var projectStartDate: String?,\r\n    var projectEndDate: String?,\r\n    var projectCreateDate: String,\r\n    var createUserId: String,\r\n    var techId: Long\r\n) {\r\n    constructor() : this(\"\", \"\", \"\", \"\", \"\", \"\", \"\", 0)\r\n\r\n    /*\r\n    private var projectId:String\r\n        get() = field\r\n        private set\r\n    private var projectName:String\r\n        get() = field\r\n        private set\r\n    private var projectDetail:String?\r\n        get() = field\r\n        private set\r\n    private var projectStartDate:Timestamp\r\n        get() = field\r\n        private set\r\n    private var projectEndDate:Timestamp\r\n        get() = field\r\n        private set\r\n    private var projectCreateDate:Timestamp\r\n        get() = field\r\n        private set\r\n\r\n    constructor(\r\n        projectId: String,\r\n        projectName: String,\r\n        projectDetail: String?,\r\n        projectStartDate: Timestamp,\r\n        projectEndDate: Timestamp,\r\n        projectCreateDate: Timestamp\r\n    ) {\r\n        this.projectId = projectId\r\n        this.projectName = projectName\r\n        this.projectDetail = projectDetail\r\n        this.projectStartDate = projectStartDate\r\n        this.projectEndDate = projectEndDate\r\n        this.projectCreateDate = projectCreateDate\r\n    }\r\n\r\n*/\r\n\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/data/pojo/Project.kt b/app/src/main/java/com/mindfulness/android_pms/data/pojo/Project.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/data/pojo/Project.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/data/pojo/Project.kt	
+@@ -8,7 +8,7 @@
+     var projectEndDate: String?,
+     var projectCreateDate: String,
+     var createUserId: String,
+-    var techId: Long
++    var techId: Long?
+ ) {
+     constructor() : this("", "", "", "", "", "", "", 0)
+ 
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_1_7\" project-jdk-name=\"1.8\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\r\n  </component>\r\n  <component name=\"ProjectType\">\r\n    <option name=\"id\" value=\"Android\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	
++++ b/.idea/misc.xml	
+@@ -1,6 +1,16 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" project-jdk-name="1.8" project-jdk-type="JavaSDK">
++  <component name="DesignSurface">
++    <option name="filePathToZoomLevelMap">
++      <map>
++        <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/activity_main.xml" value="0.22" />
++        <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/activity_main_menu.xml" value="0.371875" />
++        <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/app_bar_main.xml" value="0.371875" />
++        <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/nav_header_main.xml" value="0.371875" />
++      </map>
++    </option>
++  </component>
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/build/classes" />
+   </component>
+   <component name="ProjectType">
+Index: .idea/gradle.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"GradleMigrationSettings\" migrationVersion=\"1\" />\r\n  <component name=\"GradleSettings\">\r\n    <option name=\"linkedExternalProjectsSettings\">\r\n      <GradleProjectSettings>\r\n        <option name=\"delegatedBuild\" value=\"false\" />\r\n        <option name=\"testRunner\" value=\"PLATFORM\" />\r\n        <option name=\"distributionType\" value=\"DEFAULT_WRAPPED\" />\r\n        <option name=\"externalProjectPath\" value=\"$PROJECT_DIR$\" />\r\n        <option name=\"modules\">\r\n          <set>\r\n            <option value=\"$PROJECT_DIR$\" />\r\n            <option value=\"$PROJECT_DIR$/app\" />\r\n          </set>\r\n        </option>\r\n        <option name=\"resolveModulePerSourceSet\" value=\"false\" />\r\n      </GradleProjectSettings>\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/gradle.xml b/.idea/gradle.xml
+--- a/.idea/gradle.xml	
++++ b/.idea/gradle.xml	
+@@ -5,7 +5,7 @@
+     <option name="linkedExternalProjectsSettings">
+       <GradleProjectSettings>
+         <option name="delegatedBuild" value="false" />
+-        <option name="testRunner" value="PLATFORM" />
++        <option name="testRunner" value="GRADLE" />
+         <option name="distributionType" value="DEFAULT_WRAPPED" />
+         <option name="externalProjectPath" value="$PROJECT_DIR$" />
+         <option name="modules">
+Index: app/src/main/java/com/mindfulness/android_pms/ui/home/HomeViewModelFactory.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.ui.home\r\n\r\nimport androidx.lifecycle.ViewModel\r\nimport androidx.lifecycle.ViewModelProvider\r\nimport com.mindfulness.android_pms.data.repositories.UserRepository\r\n\r\n@Suppress(\"UNCHECKED_CAST\")\r\nclass HomeViewModelFactory(\r\n    private val repository: UserRepository\r\n) : ViewModelProvider.NewInstanceFactory() {\r\n\r\n    override fun <T : ViewModel?> create(modelClass: Class<T>): T {\r\n        return HomeViewModel(repository) as T\r\n    }\r\n\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/home/HomeViewModelFactory.kt b/app/src/main/java/com/mindfulness/android_pms/ui/home/HomeViewModelFactory.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/ui/home/HomeViewModelFactory.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/home/HomeViewModelFactory.kt	
+@@ -9,7 +9,7 @@
+     private val repository: UserRepository
+ ) : ViewModelProvider.NewInstanceFactory() {
+ 
+-    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
++    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+         return HomeViewModel(repository) as T
+     }
+ 
+Index: app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectFragment.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.ui.leftNavigation.project\r\n\r\nimport android.app.AlertDialog\r\nimport android.content.Intent\r\nimport android.os.Bundle\r\nimport android.util.Log\r\nimport android.view.LayoutInflater\r\nimport android.view.View\r\nimport android.view.ViewGroup\r\nimport android.widget.Toast\r\nimport androidx.fragment.app.Fragment\r\nimport androidx.lifecycle.Observer\r\nimport androidx.lifecycle.ViewModelProviders\r\nimport androidx.recyclerview.widget.ItemTouchHelper\r\nimport androidx.recyclerview.widget.LinearLayoutManager\r\nimport androidx.recyclerview.widget.RecyclerView\r\nimport com.firebase.ui.firestore.FirestoreRecyclerOptions\r\nimport com.google.firebase.auth.FirebaseAuth\r\nimport com.google.firebase.firestore.DocumentSnapshot\r\nimport com.google.firebase.firestore.FirebaseFirestore\r\nimport com.google.firebase.firestore.Query\r\nimport com.mindfulness.android_pms.R\r\nimport com.mindfulness.android_pms.data.pojo.Project\r\nimport com.mindfulness.android_pms.ui.leftNavigation.project.ProjectRecyclerAdapter.OnItemClickListener\r\nimport com.mindfulness.android_pms.ui.leftNavigation.project.event.ProjectAddActivity\r\nimport com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteMainActivity\r\nimport com.mindfulness.android_pms.ui.leftNavigation.project.task.ui.kanban.TaskManagementActivity\r\n\r\n//, OnItemClickListener\r\n@Suppress(\"DEPRECATION\")\r\nclass ProjectFragment : Fragment() {\r\n\r\n    private lateinit var projectViewModel: ProjectViewModel\r\n    var db: FirebaseFirestore = FirebaseFirestore.getInstance()\r\n    var projectDoc = db.collection(\"Project\")\r\n    var firebaseAuth = FirebaseAuth.getInstance()\r\n\r\n    //private lateinit var db: FirebaseFirestore\r\n    //private val projectNameArray: ArrayList<String> = ArrayList()\r\n    var adapter: ProjectRecyclerAdapter? = null\r\n    ///var projectList: MutableList<Project?> = ArrayList()\r\n\r\n    override fun onCreateView(\r\n        inflater: LayoutInflater,\r\n        container: ViewGroup?,\r\n        savedInstanceState: Bundle?\r\n    ): View? {\r\n\r\n        //projectNameArray.clear()\r\n        projectViewModel =\r\n            ViewModelProviders.of(this).get(ProjectViewModel::class.java)\r\n        val root = inflater.inflate(R.layout.fragment_project, container, false)\r\n\r\n        val rv_project: RecyclerView = root.findViewById(R.id.rv_project)\r\n        //rv_project.itemAnimator = object :FaceDetector.Fa\r\n        getDataFromFirestore(rv_project)\r\n\r\n        adapter!!.editClickStatus.observe(viewLifecycleOwner, Observer {\r\n            if (it.get(\"statu\") == true) {\r\n                Log.e(\"ddd\", \"deneme \" + it.get(\"pid\"))\r\n                Intent(activity, ProjectAddActivity::class.java).also { itt ->\r\n                    //MainMenuActivity\r\n                    //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK\r\n                    itt.putExtra(\"pid\", it.get(\"pid\") as String)\r\n                    startActivity(itt)\r\n                }\r\n            }\r\n        })\r\n\r\n        adapter!!.deleteClickStatus.observe(viewLifecycleOwner, Observer {\r\n            if (it.get(\"statu\") == true) {\r\n\r\n                val builder = AlertDialog.Builder(activity)\r\n                //set title for alert dialog\r\n                builder.setTitle(R.string.dialogTitle)\r\n                //set message for alert dialog\r\n                var message = it.get(\"pname\") as String\r\n                builder.setMessage(message)\r\n                builder.setIcon(android.R.drawable.ic_dialog_alert)\r\n\r\n                //performing positive action\r\n                builder.setPositiveButton(\"Yes\") { dialogInterface, which ->\r\n                    //Toast.makeText(activity, \"clicked yes\", Toast.LENGTH_LONG).show()\r\n\r\n                    var position = it.get(\"position\") as Int\r\n                    adapter!!.deleteItem(position)\r\n                    /*var db: FirebaseFirestore = FirebaseFirestore.getInstance()\r\n                    db.collection(\"Project\").document(it.get(\"pid\") as String)\r\n                        .delete()\r\n                        .addOnSuccessListener {\r\n\r\n                            // adapter!!.removeItem(position)\r\n\r\n                            Log.d(\r\n                                TAG,\r\n                                \"DocumentSnapshot successfully deleted!\"\r\n                            )\r\n                        }\r\n                        .addOnFailureListener { e -> Log.w(TAG, \"Error deleting document\", e) }\r\n*/\r\n                }\r\n                //performing cancel action\r\n                builder.setNeutralButton(\"Cancel\") { _, _ ->\r\n\r\n                }\r\n                //performing negative action\r\n                builder.setNegativeButton(\"No\") { _, _ ->\r\n                }\r\n                // Create the AlertDialog\r\n                val alertDialog: AlertDialog = builder.create()\r\n                // Set other dialog properties\r\n                alertDialog.setCancelable(false)\r\n                alertDialog.show()\r\n\r\n\r\n            }\r\n        })\r\n\r\n        setRecyclerViewItemTouchListener(rv_project)\r\n\r\n        return root\r\n    }\r\n\r\n    private fun getDataFromFirestore(rv_project: RecyclerView) {\r\n\r\n        var query = projectDoc.orderBy(\r\n            \"projectCreateDate\",\r\n            Query.Direction.DESCENDING\r\n        ).whereEqualTo(\"createUserId\", firebaseAuth.uid)\r\n\r\n        var options =\r\n            FirestoreRecyclerOptions.Builder<Project>().setQuery(query, Project::class.java).build()\r\n        adapter = ProjectRecyclerAdapter(options = options, mCtx = context!!)\r\n\r\n        rv_project.setHasFixedSize(true)\r\n        var layoutManager = LinearLayoutManager(context!!.applicationContext)\r\n        rv_project.layoutManager = layoutManager\r\n        rv_project.adapter = adapter\r\n\r\n        adapter!!.setOnItemClickListener(object : OnItemClickListener {\r\n            override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {\r\n\r\n                var project = documentSnapshot.toObject(Project::class.java)\r\n                var id = documentSnapshot.id\r\n                Toast.makeText(\r\n                    context,\r\n                    \"id: $id\",\r\n                    Toast.LENGTH_LONG\r\n                ).show()\r\n                /*Intent(activity, TaskManagementActivity::class.java).also { itt ->\r\n                    //MainMenuActivity\r\n                    //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK\r\n                    itt.putExtra(\"pid\", id)\r\n                    itt.putExtra(\"pname\", project!!.projectName)\r\n                    startActivity(itt)\r\n                }*/\r\n\r\n                Intent(activity, DivideInfiniteMainActivity::class.java).also { itt ->\r\n                    //MainMenuActivity\r\n                    //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK\r\n                    itt.putExtra(\"pid\", id)\r\n                    itt.putExtra(\"pname\", project!!.projectName)\r\n                    startActivity(itt)\r\n                }\r\n\r\n            }\r\n        })\r\n    }\r\n\r\n    override fun onStart() {\r\n        super.onStart()\r\n        adapter!!.startListening()\r\n    }\r\n\r\n    override fun onStop() {\r\n        super.onStop()\r\n        if (adapter != null)\r\n            adapter!!.stopListening()\r\n    }\r\n\r\n    /*override fun onResume() {\r\n        super.onResume()\r\n        adapter!!.startListening()\r\n        adapter!!.notifyDataSetChanged()\r\n    }*/\r\n\r\n    private fun setRecyclerViewItemTouchListener(rv_project: RecyclerView) {\r\n        //1\r\n        val itemTouchCallback = object :\r\n            ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {\r\n            override fun onMove(\r\n                recyclerView: RecyclerView,\r\n                viewHolder: RecyclerView.ViewHolder,\r\n                viewHolder1: RecyclerView.ViewHolder\r\n            ): Boolean {\r\n                //2\r\n                /*   val position_dragged = viewHolder.adapterPosition\r\n                   val position_target = viewHolder1.adapterPosition\r\n\r\n\r\n                   Collections.swap(projectList!!, position_dragged, position_target)\r\n                   adapter!!.notifyItemMoved(position_dragged, position_target)*/\r\n                return false\r\n            }\r\n\r\n            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, swipeDir: Int) {\r\n                //3\r\n                val position = viewHolder.adapterPosition\r\n                //adapter!!.deleteItem(position)\r\n                //adapter!!.notifyItemRemoved(position)\r\n\r\n                val builder = AlertDialog.Builder(activity)\r\n                //set title for alert dialog\r\n                builder.setTitle(R.string.dialogTitle)\r\n                //set message for alert dialog\r\n                // var message = it.get(\"pname\") as String\r\n                builder.setMessage(\"Delete Status\")\r\n                builder.setIcon(android.R.drawable.ic_dialog_alert)\r\n\r\n                //performing positive action\r\n                builder.setPositiveButton(\"Yes\") { dialogInterface, which ->\r\n                    adapter!!.deleteItem(position)\r\n                }\r\n                //performing cancel action\r\n                builder.setNeutralButton(\"Cancel\") { _, _ ->\r\n                    adapter!!.notifyItemRemoved(position)\r\n                    adapter!!.notifyItemInserted(position)\r\n                }\r\n                //performing negative action\r\n                builder.setNegativeButton(\"No\") { _, _ ->\r\n                    adapter!!.notifyItemRemoved(position)\r\n                    /* mListItems.add(mRecentlyDeletedItemPosition,\r\n                         mRecentlyDeletedItem);*/\r\n                    adapter!!.notifyItemInserted(position)\r\n                }\r\n                // Create the AlertDialog\r\n                val alertDialog: AlertDialog = builder.create()\r\n                // Set other dialog properties\r\n                alertDialog.setCancelable(false)\r\n                alertDialog.show()\r\n            }\r\n        }\r\n\r\n        //4\r\n        val itemTouchHelper = ItemTouchHelper(itemTouchCallback)\r\n        itemTouchHelper.attachToRecyclerView(rv_project)\r\n    }\r\n\r\n  /*  override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {\r\n        TODO(\"not implemented\") //To change body of created functions use File | Settings | File Templates.\r\n    }\r\n*/\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectFragment.kt b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectFragment.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectFragment.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectFragment.kt	
+@@ -23,8 +23,9 @@
+ import com.mindfulness.android_pms.data.pojo.Project
+ import com.mindfulness.android_pms.ui.leftNavigation.project.ProjectRecyclerAdapter.OnItemClickListener
+ import com.mindfulness.android_pms.ui.leftNavigation.project.event.ProjectAddActivity
++import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_4.DivideMainActivity
+ import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteMainActivity
+-import com.mindfulness.android_pms.ui.leftNavigation.project.task.ui.kanban.TaskManagementActivity
++import com.mindfulness.android_pms.ui.leftNavigation.project.task.kanban.TaskManagementActivity
+ 
+ //, OnItemClickListener
+ @Suppress("DEPRECATION")
+@@ -140,28 +141,60 @@
+         adapter!!.setOnItemClickListener(object : OnItemClickListener {
+             override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
+ 
+-                var project = documentSnapshot.toObject(Project::class.java)
+-                var id = documentSnapshot.id
++                val project = documentSnapshot.toObject(Project::class.java)
++                val id = documentSnapshot.id
++                val techId = project?.techId.let { project?.techId.toString().toInt() } //documentSnapshot.get("techId").toString().toInt() //as? Int ?: -1
+                 Toast.makeText(
+                     context,
+-                    "id: $id",
++                    "id: $id"+"type: $techId",
+                     Toast.LENGTH_LONG
+                 ).show()
+-                /*Intent(activity, TaskManagementActivity::class.java).also { itt ->
+-                    //MainMenuActivity
+-                    //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+-                    itt.putExtra("pid", id)
+-                    itt.putExtra("pname", project!!.projectName)
+-                    startActivity(itt)
+-                }*/
+-
+-                Intent(activity, DivideInfiniteMainActivity::class.java).also { itt ->
++
++                when (techId) {
++                    0 -> {
++                        Intent(activity, TaskManagementActivity::class.java).also { itt ->
++                            //MainMenuActivity
++                            //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
++                            itt.putExtra("pid", id)
++                            itt.putExtra("pname", project!!.projectName)
++                            startActivity(itt)
++                        }
++                    }
++                    1 -> {
++                        Intent(activity, DivideMainActivity::class.java).also { itt ->
++                            //MainMenuActivity
++                            //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
++                            itt.putExtra("pid", id)
++                            itt.putExtra("pname", project!!.projectName)
++                            startActivity(itt)
++                        }
++                    }
++                    2 -> {
++                        Intent(activity, DivideInfiniteMainActivity::class.java).also { itt ->
++                            //MainMenuActivity
++                            //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
++                            itt.putExtra("pid", id)
++                            itt.putExtra("pname", project!!.projectName)
++                            startActivity(itt)
++                        }
++                    }
++                    /*Intent(activity, TaskManagementActivity::class.java).also { itt ->
++                        //MainMenuActivity
++                        //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
++                        itt.putExtra("pid", id)
++                        itt.putExtra("pname", project!!.projectName)
++                        startActivity(itt)
++                    }*/
++                }
++                /*Intent(activity, TaskManagementActivity::class.java).also { itt ->
+                     //MainMenuActivity
+                     //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                     itt.putExtra("pid", id)
+                     itt.putExtra("pname", project!!.projectName)
+                     startActivity(itt)
+-                }
++                }*/
++
++
+ 
+             }
+         })
+Index: app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModelFactory.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.ui.leftNavigation.project.event\r\n\r\nimport androidx.lifecycle.ViewModel\r\nimport androidx.lifecycle.ViewModelProvider\r\nimport com.mindfulness.android_pms.data.repositories.ProjectRepository\r\n\r\n@Suppress(\"UNCHECKED_CAST\")\r\nclass ProjectAddViewModelFactory(\r\n    private val repository: ProjectRepository\r\n) : ViewModelProvider.NewInstanceFactory() {\r\n\r\n    override fun <T : ViewModel?> create(modelClass: Class<T>): T {\r\n        return ProjectAddViewModel(repository) as T\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModelFactory.kt b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModelFactory.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModelFactory.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModelFactory.kt	
+@@ -9,7 +9,7 @@
+     private val repository: ProjectRepository
+ ) : ViewModelProvider.NewInstanceFactory() {
+ 
+-    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
++    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+         return ProjectAddViewModel(repository) as T
+     }
+ }
+\ No newline at end of file
+Index: app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectRecyclerAdapter.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.ui.leftNavigation.project\r\n\r\nimport android.content.Context\r\nimport android.view.LayoutInflater\r\nimport android.view.View\r\nimport android.view.ViewGroup\r\nimport android.widget.PopupMenu\r\nimport android.widget.TextView\r\nimport androidx.cardview.widget.CardView\r\nimport androidx.lifecycle.MutableLiveData\r\nimport androidx.recyclerview.widget.RecyclerView\r\nimport com.firebase.ui.firestore.FirestoreRecyclerAdapter\r\nimport com.firebase.ui.firestore.FirestoreRecyclerOptions\r\nimport com.google.firebase.firestore.DocumentSnapshot\r\nimport com.mindfulness.android_pms.R\r\nimport com.mindfulness.android_pms.data.pojo.Project\r\n\r\n\r\n//(//private val userIdArray: ArrayList<String>,\r\n//    //private val projectIdArray: ArrayList<String>,\r\n//    private val projectName: ArrayList<Project>,\r\n//    private val mCtx: Context\r\n//)\r\nclass ProjectRecyclerAdapter(\r\n    options: FirestoreRecyclerOptions<Project>,\r\n    //var projectList: MutableList<Project?>,\r\n    private val mCtx: Context\r\n) :\r\n    FirestoreRecyclerAdapter<Project, ProjectRecyclerAdapter.PostHolder>(options) {\r\n\r\n    var listener: OnItemClickListener? = null\r\n    var editClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()\r\n    var deleteClickStatus: MutableLiveData<HashMap<String, Any>> = MutableLiveData()\r\n\r\n    override fun onCreateViewHolder(\r\n        parent: ViewGroup,\r\n        viewType: Int\r\n    ): PostHolder {\r\n        val inflater = LayoutInflater.from(parent.context)\r\n        val view = inflater.inflate(R.layout.rv_project_row, parent, false)\r\n        return PostHolder(view)\r\n    }\r\n\r\n    /* override fun getItemCount(): Int {\r\n         return projectName.size\r\n     }*/\r\n\r\n    /*fun removeItem(position: Int) {\r\n        projectName.removeAt(position)\r\n        notifyDataSetChanged()\r\n    }*/\r\n\r\n    /*override fun onBindViewHolder(holder: ProjectRecyclerAdapter.PostHolder, position: Int) {\r\n\r\n        // holder.rvProjectName?.text = projectName.get(position).projectName\r\n\r\n        holder.buttonViewOption!!.setOnClickListener(View.OnClickListener {\r\n            //creating a popup menu\r\n            //creating a popup menu\r\n            val popup = PopupMenu(mCtx, holder.buttonViewOption)\r\n            //inflating menu from xml resource\r\n            //inflating menu from xml resource\r\n            popup.inflate(R.menu.rv_options_menu)\r\n            //adding click listener\r\n            //adding click listener\r\n            popup.setOnMenuItemClickListener(object : PopupMenu.OnMenuItemClickListener {\r\n                override fun onMenuItemClick(item: MenuItem): Boolean {\r\n                    when (item.getItemId()) {\r\n                        R.id.menu1 -> {\r\n                            editClickStatus.value = hashMapOf(\r\n                                \"pid\" to projectName.get(position).projectId,\r\n                                \"statu\" to true\r\n                            )\r\n                        }\r\n                        R.id.menu2 -> {\r\n                            deleteClickStatus.value = hashMapOf(\r\n                                \"pid\" to projectName.get(position).projectId,\r\n                                \"position\" to position,\r\n                                \"pname\" to projectName.get(position).projectName,\r\n                                \"statu\" to true\r\n                            )\r\n                        }\r\n\r\n                    }\r\n                    return false\r\n                }\r\n            })\r\n            //displaying the popup\r\n            //displaying the popup\r\n            popup.show()\r\n\r\n        })\r\n    }*/\r\n\r\n    class PostHolder(view: View) : RecyclerView.ViewHolder(view) {\r\n        //View Holder class\r\n        var rvProjectName: TextView? = null\r\n        var buttonViewOption: TextView? = null\r\n        var card_viewProjectList:CardView? = null\r\n\r\n        init {\r\n            rvProjectName = view.findViewById(R.id.rv_project_name_text)\r\n            buttonViewOption = view.findViewById(R.id.textViewOptions)\r\n            card_viewProjectList = view.findViewById(R.id.card_viewProjectList)\r\n           /* view.setOnClickListener(View.OnClickListener(fun(v: View) {\r\n\r\n            }))*/\r\n        }\r\n    }\r\n\r\n     interface OnItemClickListener {\r\n         fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int)\r\n     }\r\n\r\n    fun setOnItemClickListener(listener: OnItemClickListener) {\r\n\r\n        this.listener = listener\r\n    }\r\n\r\n    /*interface OnItemClickListener {\r\n        fun onItemClicked(documentSnapshot: DocumentSnapshot, project: Project)\r\n    }*/\r\n\r\n\r\n    override fun onBindViewHolder(holder: PostHolder, position: Int, project: Project) {\r\n\r\n        holder.rvProjectName!!.text = project.projectName\r\n        //projectList = project\r\n\r\n        holder.buttonViewOption!!.setOnClickListener(View.OnClickListener {\r\n            //creating a popup menu\r\n            //creating a popup menu\r\n            val popup = PopupMenu(mCtx, holder.buttonViewOption)\r\n            //inflating menu from xml resource\r\n            //inflating menu from xml resource\r\n            popup.inflate(R.menu.rv_options_menu)\r\n            //adding click listener\r\n            //adding click listener\r\n            popup.setOnMenuItemClickListener { item ->\r\n                when (item.getItemId()) {\r\n                    R.id.menu1 -> {\r\n                        editClickStatus.value = hashMapOf(\r\n                            \"pid\" to project.projectId,\r\n                            \"statu\" to true\r\n                        )\r\n                    }\r\n                    R.id.menu2 -> {\r\n                        deleteClickStatus.value = hashMapOf(\r\n                            \"pid\" to project.projectId,\r\n                            \"position\" to position,\r\n                            \"pname\" to project.projectName,\r\n                            \"statu\" to true\r\n                        )\r\n                    }\r\n\r\n                }\r\n                false\r\n            }\r\n            //displaying the popup\r\n            //displaying the popup\r\n            popup.show()\r\n\r\n        })\r\n\r\n        holder.card_viewProjectList!!.setOnClickListener {\r\n            val position = holder.adapterPosition\r\n            if (position != RecyclerView.NO_POSITION && listener != null) {\r\n\r\n                listener!!.onItemClick(documentSnapshot = snapshots.getSnapshot(position),position = position)\r\n            }\r\n        }\r\n\r\n    }\r\n\r\n    fun deleteItem(position: Int) {\r\n        snapshots.getSnapshot(position).reference.delete()\r\n    }\r\n\r\n    /* override fun onChildChanged(\r\n         type: ChangeEventType,\r\n         snapshot: DocumentSnapshot,\r\n         newIndex: Int,\r\n         oldIndex: Int\r\n     ) {\r\n\r\n         when (type) {\r\n             ChangeEventType.ADDED -> notifyItemInserted(newIndex)\r\n             ChangeEventType.CHANGED -> notifyItemChanged(newIndex)\r\n             ChangeEventType.REMOVED -> notifyItemRemoved(newIndex)\r\n             ChangeEventType.MOVED -> notifyItemMoved(oldIndex, newIndex)\r\n         }\r\n     }*/\r\n\r\n\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectRecyclerAdapter.kt b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectRecyclerAdapter.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectRecyclerAdapter.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/ProjectRecyclerAdapter.kt	
+@@ -192,4 +192,4 @@
+      }*/
+ 
+ 
+-}
+\ No newline at end of file
++}
+Index: app/src/main/java/com/mindfulness/android_pms/ui/main/HeaderViewModelFactory.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.ui.main\r\n\r\nimport androidx.lifecycle.ViewModel\r\nimport androidx.lifecycle.ViewModelProvider\r\nimport com.mindfulness.android_pms.data.repositories.UserRepository\r\n\r\n@Suppress(\"UNCHECKED_CAST\")\r\nclass HeaderViewModelFactory(\r\n    private val repository: UserRepository\r\n) : ViewModelProvider.NewInstanceFactory() {\r\n\r\n    override fun <T : ViewModel?> create(modelClass: Class<T>): T {\r\n        return HeaderViewModel(repository) as T\r\n    }\r\n\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/main/HeaderViewModelFactory.kt b/app/src/main/java/com/mindfulness/android_pms/ui/main/HeaderViewModelFactory.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/ui/main/HeaderViewModelFactory.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/main/HeaderViewModelFactory.kt	
+@@ -9,7 +9,7 @@
+     private val repository: UserRepository
+ ) : ViewModelProvider.NewInstanceFactory() {
+ 
+-    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
++    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+         return HeaderViewModel(repository) as T
+     }
+ 
+Index: gradle/wrapper/gradle-wrapper.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>#Sat Mar 07 15:06:18 GMT+03:00 2020\r\ndistributionBase=GRADLE_USER_HOME\r\ndistributionPath=wrapper/dists\r\nzipStoreBase=GRADLE_USER_HOME\r\nzipStorePath=wrapper/dists\r\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-5.6.4-all.zip\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>windows-1252
+===================================================================
+diff --git a/gradle/wrapper/gradle-wrapper.properties b/gradle/wrapper/gradle-wrapper.properties
+--- a/gradle/wrapper/gradle-wrapper.properties	
++++ b/gradle/wrapper/gradle-wrapper.properties	
+@@ -1,6 +1,6 @@
+-#Sat Mar 07 15:06:18 GMT+03:00 2020
++#Sat Oct 24 18:43:53 GMT+03:00 2020
+ distributionBase=GRADLE_USER_HOME
+ distributionPath=wrapper/dists
+ zipStoreBase=GRADLE_USER_HOME
+ zipStorePath=wrapper/dists
+-distributionUrl=https\://services.gradle.org/distributions/gradle-5.6.4-all.zip
++distributionUrl=https\://services.gradle.org/distributions/gradle-7.0.2-bin.zip
+Index: app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.ui.leftNavigation.project.event\r\n\r\nimport android.app.DatePickerDialog\r\nimport android.content.Intent\r\nimport android.os.Bundle\r\nimport android.view.View\r\nimport android.widget.AdapterView\r\nimport android.widget.ArrayAdapter\r\nimport android.widget.DatePicker\r\nimport android.widget.Toast\r\nimport androidx.appcompat.app.AppCompatActivity\r\nimport androidx.databinding.DataBindingUtil\r\nimport androidx.lifecycle.ViewModelProviders\r\nimport androidx.lifecycle.Observer\r\nimport androidx.recyclerview.widget.LinearLayoutManager\r\nimport androidx.recyclerview.widget.RecyclerView\r\nimport com.firebase.ui.firestore.FirestoreRecyclerOptions\r\nimport com.google.firebase.firestore.FirebaseFirestore\r\nimport com.mindfulness.android_pms.R\r\nimport com.mindfulness.android_pms.data.pojo.ProjectLog\r\nimport com.mindfulness.android_pms.databinding.ActivityProjectAddBinding\r\nimport com.mindfulness.android_pms.ui.auth.AuthListener\r\nimport com.mindfulness.android_pms.utils.startMainMenuActivity\r\nimport kotlinx.android.synthetic.main.activity_project_add.*\r\nimport org.kodein.di.KodeinAware\r\nimport org.kodein.di.android.kodein\r\nimport org.kodein.di.generic.instance\r\nimport java.util.*\r\n\r\n@Suppress(\"DEPRECATED_IDENTITY_EQUALS\", \"UNUSED_VALUE\")\r\nclass ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware,\r\n    AdapterView.OnItemSelectedListener {\r\n\r\n    override val kodein by kodein()\r\n    private val factory: ProjectAddViewModelFactory by instance()\r\n    private lateinit var viewModel: ProjectAddViewModel\r\n\r\n    private var setStartYear: Int = 0\r\n    private var setStartMonth: Int = 0\r\n    private var setStartDay: Int = 0\r\n\r\n    private var setEndYear: Int = 0\r\n    private var setEndMonth: Int = 0\r\n    private var setEndDay: Int = 0\r\n\r\n    var dialogStartDate: DatePickerDialog? = null\r\n    var dialogEndDate: DatePickerDialog? = null\r\n\r\n    var pid: String? = null\r\n\r\n    var rv_projectLog2: RecyclerView? = null\r\n    var adapter: ProjectLogRecyclerAdapter? = null\r\n    var selectedTech = 0\r\n\r\n    override fun onCreate(savedInstanceState: Bundle?) {\r\n        super.onCreate(savedInstanceState)\r\n        //setContentView(R.layout.activity_project_add)\r\n\r\n        val binding: ActivityProjectAddBinding =\r\n            DataBindingUtil.setContentView(this, R.layout.activity_project_add)\r\n        viewModel = ViewModelProviders.of(this, factory).get(ProjectAddViewModel::class.java)\r\n        binding.viewmodel = viewModel\r\n\r\n        setSupportActionBar(toolbar)\r\n        supportActionBar?.setDisplayHomeAsUpEnabled(true)\r\n\r\n        viewModel.authListener = this\r\n\r\n        rv_projectLog2 = findViewById(R.id.rv_projectLog)\r\n\r\n        //get intent values\r\n        val intent1: Intent = intent\r\n        pid = intent1.getStringExtra(\"pid\")\r\n        if (pid == null) {\r\n            println(\"pid is empty.\" + pid)\r\n            val listOfItemsTech = arrayOf(\"Kanban\", \"Divide of 4\")\r\n            sp_tech.visibility = View.VISIBLE\r\n            sp_tech!!.setOnItemSelectedListener(this@ProjectAddActivity)\r\n\r\n            // Create an ArrayAdapter using a simple spinner layout and languages array\r\n            val aa = ArrayAdapter(this, android.R.layout.simple_spinner_item, listOfItemsTech)\r\n            // Set layout to use when the list of choices appear\r\n            aa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)\r\n            // Set Adapter to Spinner\r\n            sp_tech!!.adapter = aa\r\n        }\r\n        if (!pid.isNullOrEmpty()) {\r\n\r\n            sp_tech.visibility = View.GONE\r\n            getDataFromFiretoreProjectLog(rv_projectLog2!!, pid!!)\r\n\r\n            viewModel.deneme(pid!!).observe(this, Observer { project ->\r\n                if (project != null) {\r\n                    et_projectTitle.setText(project.projectName)\r\n\r\n                    sp_tech.setSelection(project.techId.toInt())\r\n                    viewModel.selectedItemPositionSpinner = project.techId.toInt()\r\n                    //Toast.makeText(this,project.techId.toString(),Toast.LENGTH_LONG).show()\r\n\r\n                    ed_projectDetail.setText(project.projectDetail)\r\n                    tv_ProjectStartDate.text = project.projectStartDate.let { \"Start Date\" }\r\n                    project.projectStartDate?.let {\r\n\r\n                        tv_ProjectStartDate.text = project.projectStartDate\r\n                        var startDate = project.projectStartDate!!.split(\"/\")\r\n\r\n                        setStartDay = startDate[0].toInt()\r\n                        setStartMonth = startDate[1].toInt()\r\n                        setStartYear = startDate[2].toInt()\r\n                        var datePicker = DatePicker(this)\r\n                        viewModel.startDateSetListener.onDateSet(\r\n                            datePicker,\r\n                            setStartYear,\r\n                            setStartMonth - 1,\r\n                            setStartDay\r\n                        )\r\n                    }\r\n                    tv_ProjectEndDate.text = project.projectEndDate.let { \"End Date\" }\r\n                    project.projectEndDate?.let {\r\n                        tv_ProjectEndDate.text = project.projectEndDate\r\n\r\n                        var endDate = project.projectEndDate!!.split(\"/\")\r\n\r\n                        setEndDay = endDate[0].toInt()\r\n                        setEndMonth = endDate[1].toInt()\r\n                        setEndYear = endDate[2].toInt()\r\n                        var datePicker = DatePicker(this)\r\n                        viewModel.endDateSetListener.onDateSet(\r\n                            datePicker,\r\n                            setEndYear,\r\n                            setEndMonth - 1,\r\n                            setEndDay\r\n                        )\r\n                    }\r\n                }\r\n            })\r\n        }\r\n\r\n        viewModel.startDateLiveData.observe(this, Observer {\r\n            tv_ProjectStartDate.text = it\r\n        })\r\n        viewModel.endDateLiveData.observe(this, Observer {\r\n            tv_ProjectEndDate.text = it\r\n        })\r\n\r\n        // live check between dates\r\n        viewModel.startStatusLiveData.observe(this, Observer {\r\n            Toast.makeText(\r\n                this@ProjectAddActivity,\r\n                it,\r\n                Toast.LENGTH_LONG\r\n            ).show()\r\n        })\r\n        viewModel.endStatusLiveData.observe(this, Observer {\r\n            Toast.makeText(\r\n                this@ProjectAddActivity,\r\n                it,\r\n                Toast.LENGTH_LONG\r\n            ).show()\r\n        })\r\n\r\n    }\r\n\r\n    fun projectStartDateClick(view: View) {\r\n\r\n        /*var year: Int\r\n        var month: Int\r\n        var day: Int\r\n\r\n        val dateSetListener =\r\n            DatePickerDialog.OnDateSetListener { view, year, monthOfYear, dayOfMonth ->\r\n                viewModel.calStart.set(Calendar.YEAR, setStartYear)\r\n                viewModel.calStart.set(Calendar.MONTH, setStartMonth)\r\n                viewModel.calStart.set(Calendar.DAY_OF_MONTH, setStartDay)\r\n            }\r\n\r\n        if (setStartYear == 0) {\r\n            year = Calendar.YEAR\r\n            month = Calendar.MONTH\r\n            day = Calendar.DAY_OF_MONTH\r\n            println(\"YEAR:\" + Calendar.YEAR + \"::month::\" + month)\r\n            var aa = viewModel.startDateSetListener\r\n        } else {\r\n            year = setStartYear\r\n            month = setStartMonth\r\n            day = setStartDay\r\n            var aa = dateSetListener\r\n        }*/\r\n\r\n        dialogStartDate = DatePickerDialog(\r\n            this,\r\n            viewModel.startDateSetListener,//viewModel.startDateSetListener,\r\n            // set DatePickerDialog to point to today's date when it loads up\r\n            viewModel.calStart.get(Calendar.YEAR),\r\n            viewModel.calStart.get(Calendar.MONTH),\r\n            viewModel.calStart.get(Calendar.DAY_OF_MONTH)\r\n        )\r\n        dialogStartDate!!.show()\r\n\r\n        //val c = Calendar.getInstance()\r\n\r\n        /*var day2 = 0\r\n        var month2 = 0\r\n        var year2 = 0\r\n        if (setStartYear == 0) {\r\n            day2 = viewModel.calStart.get(Calendar.DAY_OF_MONTH)\r\n            month2 = viewModel.calStart.get(Calendar.MONTH)\r\n            year2 = viewModel.calStart.get(Calendar.YEAR)\r\n            println(\"date:::$setStartDay - $setStartMonth - $setStartYear\")\r\n        } else {\r\n            day2 = setStartYear\r\n            month2 = setStartMonth\r\n            year2 = setStartDay\r\n            println(\"date:::$setStartDay - $setStartMonth - $setStartYear\")\r\n        }\r\n        val dpd = DatePickerDialog(\r\n            this,\r\n            android.R.style.Widget_PopupWindow,\r\n            DatePickerDialog.OnDateSetListener { datePicker, selyear, monthOfYear, dayOfMonth ->\r\n\r\n                if (tv_ProjectEndDate.text.equals(\"End Date\")) {\r\n                    viewModel.setStartDate(selyear, monthOfYear, dayOfMonth)\r\n                } else { // Son tarihten küçük mü kontrol et\r\n\r\n                    viewModel.checkStartDate(selyear, monthOfYear, dayOfMonth)\r\n\r\n                }\r\n                day2 = dayOfMonth\r\n                month2 = monthOfYear + 1\r\n                year2 = selyear\r\n                //tv.text = \"$day - $month - $year\"\r\n\r\n            }, year2, month2, day2\r\n        )\r\n\r\n        dpd.show()*/\r\n\r\n    }\r\n\r\n    fun projectEndDateClick(view: View) {\r\n\r\n        dialogEndDate = DatePickerDialog(\r\n            this,\r\n            viewModel.endDateSetListener,\r\n            // set DatePickerDialog to point to today's date when it loads up\r\n            viewModel.calEnd.get(Calendar.YEAR),\r\n            viewModel.calEnd.get(Calendar.MONTH),\r\n            viewModel.calEnd.get(Calendar.DAY_OF_MONTH)\r\n        )\r\n        // dialog.getDatePicker().setOnDateChangedListener().setMinDate(System.currentTimeMillis() - 1000)\r\n        // dialog.datePicker.maxDate = Calendar.getInstance().timeInMillis\r\n        dialogEndDate!!.show()\r\n    }\r\n\r\n    override fun onStarted() {\r\n        Toast.makeText(this@ProjectAddActivity, \"Kayıt İşlemi Başladı.\", Toast.LENGTH_LONG).show()\r\n    }\r\n\r\n    override fun onSuccess() {\r\n        Toast.makeText(this@ProjectAddActivity, \"Başarılı!\", Toast.LENGTH_LONG).show()\r\n        startMainMenuActivity()\r\n    }\r\n\r\n    override fun onFailure(message: String) {\r\n        Toast.makeText(this@ProjectAddActivity, message, Toast.LENGTH_LONG).show()\r\n    }\r\n\r\n    fun insertOrUpdateProjectClick(view: View) {\r\n\r\n        if (pid.isNullOrEmpty()) {\r\n            viewModel.insertClick()\r\n        } else {\r\n            viewModel.insertClick(pid)\r\n        }\r\n    }\r\n\r\n    private fun getDataFromFiretoreProjectLog(rv_projectLog: RecyclerView, projectId: String) {\r\n\r\n        var db = FirebaseFirestore.getInstance()\r\n        var projectLogDoc = db.collection(\"ProjectLog\")\r\n        var query = projectLogDoc.whereEqualTo(\r\n            \"projectId\",\r\n            projectId\r\n        )//.orderBy(\"createDate\",Query.Direction.DESCENDING) //.orderBy(\"createDate\",Query.Direction.DESCENDING)\r\n        /*  var query = viewModel._getProjectLogDB(projectId)\r\n          query?.observe(this, Observer {\r\n              if(it != null){*/\r\n        var options =\r\n            FirestoreRecyclerOptions.Builder<ProjectLog>().setQuery(query, ProjectLog::class.java)\r\n                .build()\r\n        adapter = ProjectLogRecyclerAdapter(options = options)\r\n        rv_projectLog.setHasFixedSize(true)\r\n        var layoutManager = LinearLayoutManager(this@ProjectAddActivity.applicationContext)\r\n        rv_projectLog.layoutManager = layoutManager\r\n        rv_projectLog.adapter = adapter\r\n        // }\r\n\r\n        //  })\r\n\r\n\r\n    }\r\n\r\n    override fun onStart() {\r\n        super.onStart()\r\n        if (adapter != null)\r\n            adapter!!.startListening()\r\n    }\r\n\r\n    override fun onResume() {\r\n        super.onResume()\r\n        if (adapter != null)\r\n            adapter!!.startListening()\r\n    }\r\n\r\n    override fun onStop() {\r\n        super.onStop()\r\n        if (adapter != null)\r\n            adapter!!.stopListening()\r\n    }\r\n\r\n    override fun onNothingSelected(parent: AdapterView<*>?) {\r\n        TODO(\"not implemented\") //To change body of created functions use File | Settings | File Templates.\r\n    }\r\n\r\n    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {\r\n\r\n        viewModel.selectedItemPositionSpinner = position\r\n        selectedTech = position\r\n        // Toast.makeText(application,selectedTech.toString(),Toast.LENGTH_LONG).show()\r\n    }\r\n\r\n    /*fun setSelectedItemPosition(selectedItemPosition: Int) {\r\n\r\n        // var BR :Spinner\r\n        notifyPropertyChanged(sp_tech.selectedItemPosition)\r\n    }*/\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddActivity.kt b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddActivity.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddActivity.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddActivity.kt	
+@@ -73,7 +73,7 @@
+         pid = intent1.getStringExtra("pid")
+         if (pid == null) {
+             println("pid is empty." + pid)
+-            val listOfItemsTech = arrayOf("Kanban", "Divide of 4")
++            val listOfItemsTech = arrayOf("Kanban", "Divide of 4","Divide by infinity")
+             sp_tech.visibility = View.VISIBLE
+             sp_tech!!.setOnItemSelectedListener(this@ProjectAddActivity)
+ 
+@@ -93,8 +93,8 @@
+                 if (project != null) {
+                     et_projectTitle.setText(project.projectName)
+ 
+-                    sp_tech.setSelection(project.techId.toInt())
+-                    viewModel.selectedItemPositionSpinner = project.techId.toInt()
++                    sp_tech.setSelection(project.techId!!.toInt())
++                    viewModel.selectedItemPositionSpinner = project.techId!!.toInt()
+                     //Toast.makeText(this,project.techId.toString(),Toast.LENGTH_LONG).show()
+ 
+                     ed_projectDetail.setText(project.projectDetail)
+Index: app/src/main/res/layout/activity_add_card_divide_infinite.xml
+===================================================================
+diff --git a/app/src/main/res/layout/activity_add_card_divide_infinite.xml b/app/src/main/res/layout/activity_add_card_divide_infinite.xml
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/res/layout/activity_add_card_divide_infinite.xml	
+@@ -0,0 +1,80 @@
++<?xml version="1.0" encoding="utf-8"?>
++<layout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:tools="http://schemas.android.com/tools"
++    xmlns:app="http://schemas.android.com/apk/res-auto">
++
++    <data>
++        <variable name="viewmodel"
++            type="com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteViewModel"/>
++    </data>
++<androidx.constraintlayout.widget.ConstraintLayout
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:background="#ffffee"
++    tools:context=".ui.leftNavigation.project.task.ui.kanban.add.AddCardDivideInfiniteActivity">
++
++    <androidx.appcompat.widget.Toolbar
++        android:layout_width="match_parent"
++        android:layout_height="50dp"
++        android:id="@+id/toolbar2"
++        android:background="@color/colorPrimary"
++        tools:ignore="MissingConstraints">
++
++    </androidx.appcompat.widget.Toolbar>
++
++    <EditText
++        android:id="@+id/et_cardTitle"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_marginLeft="20dp"
++        android:layout_marginRight="20dp"
++        android:layout_marginTop="16dp"
++        android:layout_marginBottom="16dp"
++        android:background="#ffffff"
++        android:hint="Card Title"
++        android:inputType="text"
++        android:padding="10dp"
++        android:text="@={viewmodel.cardTitle}"
++        android:textSize="24dp"
++        app:layout_constraintBottom_toTopOf="@+id/et_cardDetal"
++        app:layout_constraintEnd_toEndOf="parent"
++        app:layout_constraintStart_toStartOf="parent"
++        app:layout_constraintTop_toBottomOf="@+id/toolbar2" />
++
++    <EditText
++        android:id="@+id/et_cardDetal"
++        android:layout_width="match_parent"
++        android:layout_height="80dp"
++        android:layout_marginLeft="20dp"
++        android:layout_marginRight="20dp"
++        android:layout_marginBottom="20dp"
++        android:background="#ffffff"
++        android:backgroundTint="#ffffff"
++        android:hint="Card Detail"
++        android:padding="10dp"
++        android:inputType="text"
++        android:text="@={viewmodel.cardDetail}"
++        app:layout_constraintBottom_toTopOf="@+id/tv_colors"
++        app:layout_constraintEnd_toEndOf="parent"
++        app:layout_constraintStart_toStartOf="parent"
++        app:layout_constraintTop_toBottomOf="@+id/et_cardTitle"></EditText>
++
++    <TextView
++        android:id="@+id/tv_colors"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_margin="20dp"
++        android:background="#ffffff"
++        android:clickable="true"
++        android:hint="Choose Card Color"
++        android:onClick="chooseCardColor"
++        android:shadowColor="#ffffff"
++        android:textAlignment="center"
++        android:textSize="18dp"
++        app:layout_constraintEnd_toEndOf="parent"
++        app:layout_constraintStart_toStartOf="parent"
++        app:layout_constraintTop_toBottomOf="@+id/et_cardDetal"></TextView>
++
++</androidx.constraintlayout.widget.ConstraintLayout>
++
++</layout>
+\ No newline at end of file
+Index: app/src/main/res/layout-v28/fragment_tab.xml
+===================================================================
+diff --git a/app/src/main/res/layout-v28/fragment_tab.xml b/app/src/main/res/layout-v28/fragment_tab.xml
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/res/layout-v28/fragment_tab.xml	
+@@ -0,0 +1,23 @@
++<?xml version="1.0" encoding="utf-8"?>
++<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:id="@+id/constraintLayout"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    tools:context="PlaceholderFragment">
++
++    <TextView
++        android:id="@+id/section_label"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_marginStart="@dimen/activity_horizontal_margin"
++        android:layout_marginTop="@dimen/activity_vertical_margin"
++        android:layout_marginEnd="@dimen/activity_horizontal_margin"
++        android:layout_marginBottom="@dimen/activity_vertical_margin"
++        app:layout_constraintLeft_toLeftOf="parent"
++        app:layout_constraintTop_toTopOf="@+id/constraintLayout"
++        tools:layout_constraintLeft_creator="1"
++        tools:layout_constraintTop_creator="1" />
++
++</android.support.constraint.ConstraintLayout>
+\ No newline at end of file
+Index: build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Top-level build file where you can add configuration options common to all sub-projects/modules.\r\n\r\nbuildscript {\r\n    ext.kotlin_version = '1.3.61'\r\n    repositories {\r\n        google()\r\n        jcenter()\r\n        \r\n    }\r\n    dependencies {\r\n        classpath 'com.android.tools.build:gradle:3.6.1'\r\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version\"\r\n        classpath 'com.google.gms:google-services:4.2.0'\r\n        // NOTE: Do not place your application dependencies here; they belong\r\n        // in the individual module build.gradle files\r\n    }\r\n}\r\n\r\nallprojects {\r\n    repositories {\r\n        google()\r\n        jcenter()\r\n        \r\n    }\r\n}\r\n\r\ntask clean(type: Delete) {\r\n    delete rootProject.buildDir\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.gradle b/build.gradle
+--- a/build.gradle	
++++ b/build.gradle	
+@@ -1,16 +1,16 @@
+ // Top-level build file where you can add configuration options common to all sub-projects/modules.
+ 
+ buildscript {
+-    ext.kotlin_version = '1.3.61'
++    ext.kotlin_version = '1.6.10-RC'//'1.3.71'
+     repositories {
+         google()
+         jcenter()
+         
+     }
+     dependencies {
+-        classpath 'com.android.tools.build:gradle:3.6.1'
++        classpath 'com.android.tools.build:gradle:7.0.4'
+         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+-        classpath 'com.google.gms:google-services:4.2.0'
++        classpath 'com.google.gms:google-services:4.3.10'
+         // NOTE: Do not place your application dependencies here; they belong
+         // in the individual module build.gradle files
+     }
+Index: app/src/main/res/layout/activity_project_add.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n\r\n<layout xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\r\n    xmlns:tools=\"http://schemas.android.com/tools\">\r\n\r\n    <data>\r\n\r\n        <variable\r\n            name=\"viewmodel\"\r\n            type=\"com.mindfulness.android_pms.ui.leftNavigation.project.event.ProjectAddViewModel\" />\r\n    </data>\r\n\r\n\r\n    <androidx.coordinatorlayout.widget.CoordinatorLayout\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"match_parent\"\r\n        android:fitsSystemWindows=\"true\"\r\n        tools:context=\".ui.leftNavigation.project.event.ProjectAddActivity\">\r\n\r\n        <com.google.android.material.appbar.AppBarLayout\r\n            android:id=\"@+id/app_bar\"\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"180dp\"\r\n            android:backgroundTint=\"@color/cardview_shadow_start_color\"\r\n            android:fitsSystemWindows=\"true\"\r\n            android:theme=\"@style/AppTheme.AppBarOverlay\">\r\n\r\n            <com.google.android.material.appbar.CollapsingToolbarLayout\r\n                android:id=\"@+id/toolbar_layout\"\r\n                android:layout_width=\"match_parent\"\r\n                android:layout_height=\"match_parent\"\r\n                android:fitsSystemWindows=\"true\"\r\n                app:contentScrim=\"?attr/colorPrimary\"\r\n                app:layout_scrollFlags=\"scroll|exitUntilCollapsed\"\r\n                app:toolbarId=\"@+id/toolbar\">\r\n\r\n                <androidx.appcompat.widget.Toolbar\r\n                    android:id=\"@+id/toolbar\"\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"?attr/actionBarSize\"\r\n                    app:layout_collapseMode=\"pin\"\r\n                    app:popupTheme=\"@style/AppTheme.PopupOverlay\" />\r\n\r\n                <LinearLayout\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"wrap_content\"\r\n                    android:layout_marginStart=\"50dp\"\r\n                    android:layout_marginTop=\"130dp\"\r\n                    android:textAlignment=\"center\">\r\n\r\n                    <EditText\r\n                        android:id=\"@+id/et_projectTitle\"\r\n                        android:layout_width=\"match_parent\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:drawableLeft=\"@drawable/ic_rate_review_black_24dp\"\r\n                        android:hint=\"Project Title\"\r\n                        android:text=\"@={viewmodel.title}\"\r\n                        android:textSize=\"24dp\"></EditText>\r\n\r\n                </LinearLayout>\r\n\r\n            </com.google.android.material.appbar.CollapsingToolbarLayout>\r\n\r\n        </com.google.android.material.appbar.AppBarLayout>\r\n\r\n        <androidx.core.widget.NestedScrollView\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"match_parent\"\r\n            app:layout_behavior=\"@string/appbar_scrolling_view_behavior\"\r\n            tools:context=\".ui.leftNavigation.project.event.ProjectAddActivity\"\r\n            tools:showIn=\"@layout/activity_project_add\">\r\n\r\n            <LinearLayout\r\n                android:layout_width=\"match_parent\"\r\n                android:layout_height=\"match_parent\"\r\n                android:orientation=\"vertical\"\r\n                android:padding=\"15dp\">\r\n\r\n                <Spinner\r\n                    android:id=\"@+id/sp_tech\"\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"wrap_content\"\r\n                    android:layout_margin=\"20dp\"\r\n                    android:padding=\"20dp\"\r\n                    android:selectedItemPosition=\"@={viewmodel.selectedItemPositionSpinner}\"\r\n                    android:visibility=\"gone\"></Spinner>\r\n\r\n                <EditText\r\n                    android:id=\"@+id/ed_projectDetail\"\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"100dp\"\r\n                    android:drawableLeft=\"@drawable/ic_details_black_24dp\"\r\n                    android:gravity=\"clip_vertical\"\r\n                    android:hint=\"Project Detail\"\r\n                    android:text=\"@={viewmodel.projectDetail}\"></EditText>\r\n\r\n                <LinearLayout\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"wrap_content\"\r\n                    android:orientation=\"horizontal\"\r\n                    android:padding=\"15dp\">\r\n\r\n                    <androidx.cardview.widget.CardView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\">\r\n\r\n                        <TextView\r\n\r\n                            android:id=\"@+id/tv_ProjectStartDate\"\r\n                            android:layout_width=\"150dp\"\r\n                            android:layout_height=\"wrap_content\"\r\n                            android:drawableLeft=\"@drawable/ic_date_range_black_24dp\"\r\n                            android:onClick=\"projectStartDateClick\"\r\n                            android:text=\"@={viewmodel.startDate}\"\r\n                            android:textSize=\"20dp\"></TextView>\r\n                    </androidx.cardview.widget.CardView>\r\n\r\n                    <androidx.cardview.widget.CardView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:layout_marginStart=\"50dp\">\r\n\r\n                        <TextView\r\n                            android:id=\"@+id/tv_ProjectEndDate\"\r\n\r\n                            android:layout_width=\"150dp\"\r\n                            android:layout_height=\"wrap_content\"\r\n                            android:drawableLeft=\"@drawable/ic_date_range_black_24dp\"\r\n                            android:onClick=\"projectEndDateClick\"\r\n                            android:text=\"@={viewmodel.endDate}\"\r\n                            android:textSize=\"20dp\"></TextView>\r\n                    </androidx.cardview.widget.CardView>\r\n\r\n                </LinearLayout>\r\n\r\n                <LinearLayout\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"460dp\"\r\n                    android:padding=\"10dp\">\r\n\r\n                    <androidx.recyclerview.widget.RecyclerView\r\n                        android:id=\"@+id/rv_projectLog\"\r\n\r\n                        android:layout_width=\"match_parent\"\r\n                        android:layout_height=\"450dp\">\r\n\r\n                    </androidx.recyclerview.widget.RecyclerView>\r\n\r\n                </LinearLayout>\r\n\r\n            </LinearLayout>\r\n\r\n\r\n        </androidx.core.widget.NestedScrollView>\r\n\r\n        <com.google.android.material.floatingactionbutton.FloatingActionButton\r\n            android:id=\"@+id/fab\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:layout_margin=\"@dimen/fab_margin\"\r\n            android:backgroundTint=\"@color/colorPrimaryDark\"\r\n            android:onClick=\"insertOrUpdateProjectClick\"\r\n            app:layout_anchor=\"@id/app_bar\"\r\n            app:layout_anchorGravity=\"bottom|end\"\r\n            app:srcCompat=\"@android:drawable/ic_input_add\" />\r\n\r\n    </androidx.coordinatorlayout.widget.CoordinatorLayout>\r\n\r\n</layout>\r\n\r\n    <!--\r\n    @{() -> viewmodel.insertClick()}\r\n    -->
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_project_add.xml b/app/src/main/res/layout/activity_project_add.xml
+--- a/app/src/main/res/layout/activity_project_add.xml	
++++ b/app/src/main/res/layout/activity_project_add.xml	
+@@ -56,7 +56,9 @@
+                         android:drawableLeft="@drawable/ic_rate_review_black_24dp"
+                         android:hint="Project Title"
+                         android:text="@={viewmodel.title}"
+-                        android:textSize="24dp"></EditText>
++                        android:textSize="24dp"
++                        android:importantForAutofill="no"
++                        android:inputType="text" />
+ 
+                 </LinearLayout>
+ 
+Index: app/src/main/res/menu/add_button.xml
+===================================================================
+diff --git a/app/src/main/res/menu/add_button.xml b/app/src/main/res/menu/add_button.xml
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/res/menu/add_button.xml	
+@@ -0,0 +1,15 @@
++<?xml version="1.0" encoding="utf-8"?>
++<menu xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto">
++    <item
++        android:id="@+id/action_one"
++        android:icon="@drawable/ic_add"
++        app:showAsAction="always"
++        android:title="Item One"/>
++    <item
++        android:id="@+id/action_two"
++        android:title="Item Two"/>
++    <item
++        android:id="@+id/action_three"
++        android:title="Item Three"/>
++</menu>
+\ No newline at end of file
+Index: app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms.ui.leftNavigation.project.event\r\n\r\nimport android.app.DatePickerDialog\r\nimport android.os.SystemClock\r\nimport android.view.View\r\nimport android.widget.AdapterView\r\nimport android.widget.DatePicker\r\nimport androidx.databinding.Bindable\r\nimport androidx.lifecycle.MutableLiveData\r\nimport androidx.lifecycle.ViewModel\r\nimport com.google.firebase.firestore.FirebaseFirestore\r\nimport com.mindfulness.android_pms.data.pojo.Project\r\nimport com.mindfulness.android_pms.data.repositories.ProjectRepository\r\nimport com.mindfulness.android_pms.ui.auth.AuthListener\r\nimport io.reactivex.android.schedulers.AndroidSchedulers\r\nimport io.reactivex.disposables.CompositeDisposable\r\nimport io.reactivex.schedulers.Schedulers\r\nimport java.text.SimpleDateFormat\r\nimport java.util.*\r\n\r\n\r\nclass ProjectAddViewModel(\r\n    private val repository: ProjectRepository\r\n) : ViewModel() {\r\n\r\n    var project: Project? = null\r\n    var title: String? = null\r\n    var projectDetail: String? = null\r\n    var startDate: String? = \"Start Date\"\r\n    var endDate: String? = \"End Date\"\r\n    var techId: Int? = 0\r\n    var selectedItemPositionSpinner = 0\r\n    var status = MutableLiveData<String?>()\r\n    var startDateLiveData = MutableLiveData<String>()\r\n    var endDateLiveData = MutableLiveData<String>()\r\n    var startStatusLiveData = MutableLiveData<String>()\r\n    var endStatusLiveData = MutableLiveData<String>()\r\n\r\n    val calStart = Calendar.getInstance()\r\n    val calEnd = Calendar.getInstance()\r\n\r\n    var startYear = 0\r\n    var startMonth = 0\r\n    var startDay = 0\r\n    var endYear = 0\r\n    var endMonth = 0\r\n    var endDay = 0\r\n\r\n\r\n    //auth listener\r\n    var authListener: AuthListener? = null\r\n    //disposable to dispose the Completable\r\n    private val disposables = CompositeDisposable()\r\n\r\n    // variable to track event time\r\n    private var mLastClickTime: Long = 0\r\n\r\n    fun onSelectItem(\r\n        parent: AdapterView<*>?,\r\n        view: View?,\r\n        pos: Int,\r\n        id: Long\r\n    ) { //pos                                 get selected item position\r\n//view.getText()                      get lable of selected item\r\n//parent.getAdapter().getItem(pos)    get item by pos\r\n//parent.getAdapter().getCount()      get item count\r\n//parent.getCount()                   get item count\r\n//parent.getSelectedItem()            get selected item\r\n//and other...\r\n        parent!!.setSelection(0)\r\n    }\r\n\r\n    @Bindable\r\n    fun getSelectedItemPosition(): Int {\r\n        return selectedItemPositionSpinner\r\n    }\r\n\r\n   /* fun setSelectedItemPosition(selectedItemPosition: Int) {\r\n        selectedItemPositionSpinner = selectedItemPosition\r\n        //notifyPropertyChanged(BR.selectedItemPosition)\r\n    }*/\r\n    /*fun setSelectedItemPosition(selectedItemPosition: Int) {\r\n        selectedItemPositionSpinner = selectedItemPosition\r\n       // var BR :Spinner\r\n        notifyPropertyChanged(sp.selectedItemPosition)\r\n    }*/\r\n\r\n    fun insertClick(pid: String? = null) {\r\n\r\n        // Preventing multiple clicks, using threshold of 1 second\r\n        if (SystemClock.elapsedRealtime() - mLastClickTime < 1500) {\r\n            return\r\n        }\r\n        mLastClickTime = SystemClock.elapsedRealtime()\r\n\r\n        //validating email and password\r\n        if (title.isNullOrEmpty()) {\r\n            authListener?.onFailure(\"Invalid Title\")\r\n            return\r\n        }\r\n\r\n        //insert started\r\n        authListener?.onStarted()\r\n\r\n        // if(pid == null){\r\n        project = Project(\r\n            \"\",\r\n            title!!,\r\n            projectDetail,\r\n            startDateLiveData.value,\r\n            endDateLiveData.value,\r\n            Calendar.getInstance().time.toString(),\r\n            \"\",\r\n            getSelectedItemPosition().toLong()\r\n        )\r\n        // }\r\n        /* if(pid != null){\r\n             project = Project(\r\n                 pid,\r\n                 title!!,\r\n                 projectDetail,\r\n                 startDateLiveData.value,\r\n                 endDateLiveData.value,\r\n                 Calendar.getInstance().time.toString(),\r\n                 \"\"\r\n             )\r\n         }*/\r\n        pid?.let { project!!.projectId = pid }\r\n\r\n        //calling login from repository to perform the actual insertion\r\n        val disposable = repository.projectInsert(project!!)\r\n            .subscribeOn(Schedulers.io())\r\n            .observeOn(AndroidSchedulers.mainThread())\r\n            .subscribe({\r\n                //sending a success callback\r\n                try {\r\n                    authListener?.onSuccess()\r\n                } catch (e: Exception) {\r\n                    authListener?.onFailure(\"Başarısız!\")\r\n                }\r\n                /*finally {\r\n                    authListener?.onFailure(\"Başarısız!\")\r\n                }*/\r\n\r\n            }, {\r\n                //sending a failure callback\r\n                authListener?.onFailure(it.message!!)\r\n            })\r\n        disposables.add(disposable)\r\n\r\n    }\r\n\r\n\r\n    fun setStartDate(year: Int, monthOfYear: Int, dayOfMonth: Int) {\r\n        calStart.set(Calendar.YEAR, year)\r\n        calStart.set(Calendar.MONTH, monthOfYear)\r\n        calStart.set(Calendar.DAY_OF_MONTH, dayOfMonth)\r\n\r\n        startYear = year\r\n        startMonth = monthOfYear\r\n        startDay = dayOfMonth\r\n\r\n        updateStartDateInView()\r\n    }\r\n\r\n    fun setEndDate(year: Int, monthOfYear: Int, dayOfMonth: Int) {\r\n        calEnd.set(Calendar.YEAR, year)\r\n        calEnd.set(Calendar.MONTH, monthOfYear)\r\n        calEnd.set(Calendar.DAY_OF_MONTH, dayOfMonth)\r\n\r\n        endYear = year\r\n        endMonth = monthOfYear\r\n        endDay = dayOfMonth\r\n\r\n        updateEndDateInView()\r\n    }\r\n\r\n    private fun updateStartDateInView() {\r\n        // dil seçeneğine göre değiştir\r\n        //tr\r\n        val myFormat = \"dd/MM/yyyy\" // mention the format you need\r\n        //us\r\n        //val myFormat = \"MM/dd//yyyy\"\r\n        val sdf = SimpleDateFormat(myFormat, Locale.US)\r\n\r\n        startDateLiveData.value = sdf.format(calStart.getTime())\r\n        startDate = sdf.format(calStart.getTime())\r\n    }\r\n\r\n    private fun updateEndDateInView() {\r\n        // dil seçeneğine göre değiştir\r\n        //tr\r\n        val myFormat = \"dd/MM/yyyy\" // mention the format you need\r\n        //us\r\n        //val myFormat = \"MM/dd//yyyy\"\r\n        val sdf = SimpleDateFormat(myFormat, Locale.US)\r\n\r\n        endDateLiveData.value = sdf.format(calEnd.getTime())\r\n        endDate = sdf.format(calEnd.getTime())\r\n\r\n    }\r\n\r\n\r\n    // create an OnDateSetListener\r\n    val startDateSetListener = object : DatePickerDialog.OnDateSetListener {\r\n\r\n        var year: Int? = null\r\n        var month: Int? = null\r\n        var day: Int? = null\r\n\r\n        /*  if (0 == 0) {\r\n              year = Calendar.YEAR\r\n              month = Calendar.MONTH\r\n              day = Calendar.DAY_OF_MONTH\r\n              println(\"YEAR:\" + Calendar.YEAR+\"::month::\"+month)\r\n          } else {\r\n              year = setStartYear\r\n              month = setStartMonth\r\n              day = setStartDay\r\n          }*/\r\n\r\n        override fun onDateSet(\r\n            view: DatePicker, year: Int, monthOfYear: Int,\r\n            dayOfMonth: Int\r\n        ) {\r\n            println(\"startDateSetListener:::$year - $monthOfYear - $dayOfMonth\")\r\n            if (endDate.equals(\"End Date\")) {\r\n                setStartDate(year, monthOfYear, dayOfMonth)\r\n\r\n            } else { // Son tarihten küçük mü kontrol et\r\n\r\n                checkStartDate(year, monthOfYear, dayOfMonth)\r\n\r\n            }\r\n        }\r\n    }\r\n\r\n    val endDateSetListener = object : DatePickerDialog.OnDateSetListener {\r\n        override fun onDateSet(\r\n            view: DatePicker, year: Int, monthOfYear: Int,\r\n            dayOfMonth: Int\r\n        ) {\r\n            println(\"endDateSetListener:::$year - $monthOfYear - $dayOfMonth\")\r\n            if (startDate.equals(\"Start Date\")) {\r\n                setEndDate(year, monthOfYear, dayOfMonth)\r\n\r\n            } else { // ilk tarihten büyük mü kontrol et\r\n\r\n                checkEndDate(year, monthOfYear, dayOfMonth)\r\n\r\n            }\r\n\r\n        }\r\n    }\r\n\r\n    ////\r\n\r\n    fun checkStartDate(year: Int, monthOfYear: Int, dayOfMonth: Int) {\r\n\r\n        var isSetStartDate: Boolean? = null\r\n\r\n        // yıl kontrolü :::\r\n        if (endYear < year) {\r\n            isSetStartDate = false\r\n            startStatusLiveData.value =\r\n                \"Başlama yılı Bitirme yılından küçük olamaz: ${endYear} >= ${year}\"\r\n            /* Toast.makeText(\r\n                 this@ProjectAddActivity,\r\n                 \"Başlama yılı Bitirme yılından küçük olamaz: ${endYear} >= ${year}\",\r\n                 Toast.LENGTH_SHORT\r\n             ).show()*/\r\n\r\n        }\r\n        if (endYear > year) {\r\n            isSetStartDate = true\r\n        }\r\n        // :::\r\n\r\n        if (endMonth == monthOfYear && endYear == year && endDay >= dayOfMonth) {\r\n            isSetStartDate = true\r\n        }\r\n        // ay kontrolü ...\r\n        if (startYear == year && endMonth < monthOfYear) {\r\n            isSetStartDate = false\r\n            startStatusLiveData.value =\r\n                \"Başlama ayı Bitirme ayından küçük olamaz.\"\r\n            /* Toast.makeText(\r\n                 this@ProjectAddActivity,\r\n                 \"Başlama ayı Bitirme ayından küçük olamaz: ${endMonth} > ${monthOfYear}\",\r\n                 Toast.LENGTH_SHORT\r\n             ).show()*/\r\n\r\n        }\r\n        if (endYear == year && endMonth >= monthOfYear) {\r\n            isSetStartDate = true\r\n        }\r\n        //...\r\n\r\n        // gün kontrolü\r\n        if (endMonth == monthOfYear && endYear == year && endDay < dayOfMonth) {\r\n            isSetStartDate = false\r\n            startStatusLiveData.value =\r\n                \"Başlama günü Bitirme gününden küçük olamaz.\"\r\n            /*Toast.makeText(\r\n                this@ProjectAddActivity,\r\n                \"Başlama günü Bitirme gününden küçük olamaz: ${startDay} >= ${dayOfMonth}\",\r\n                Toast.LENGTH_SHORT\r\n            ).show()*/\r\n\r\n        }\r\n        if (isSetStartDate != null && isSetStartDate == true) {\r\n            setStartDate(year, monthOfYear, dayOfMonth)\r\n        }\r\n\r\n    }\r\n\r\n\r\n    fun checkEndDate(year: Int, monthOfYear: Int, dayOfMonth: Int) {\r\n\r\n        var isSetEndDate: Boolean? = null\r\n\r\n        // yıl kontrolü :::\r\n        if (startYear > year) {\r\n            isSetEndDate = false\r\n            endStatusLiveData.value =\r\n                \"Bitirme yılı Başlama yılından küçük olamaz.\"\r\n            /*Toast.makeText(\r\n                this@ProjectAddActivity,\r\n                \"Bitirme yılı Başlama yılından küçük olamaz: ${startYear} >= ${year}\",\r\n                Toast.LENGTH_SHORT\r\n            ).show()*/\r\n\r\n        }\r\n        if (startYear < year) {\r\n            isSetEndDate = true\r\n        }\r\n        // :::\r\n\r\n        if (startMonth == monthOfYear && startYear == year && startDay <= dayOfMonth) {\r\n            isSetEndDate = true\r\n        }\r\n        // ay kontrolü ...\r\n        if (startYear == year && startMonth > monthOfYear) {\r\n            isSetEndDate = false\r\n            endStatusLiveData.value =\r\n                \"Bitirme ayı Başlama ayından küçük olamaz.\"\r\n            /*Toast.makeText(\r\n                this@ProjectAddActivity,\r\n                \"Bitirme ayı Başlama ayından küçük olamaz: ${startMonth} > ${monthOfYear}\",\r\n                Toast.LENGTH_SHORT\r\n            ).show()*/\r\n\r\n        }\r\n        if (startYear == year && startMonth <= monthOfYear) {\r\n            isSetEndDate = true\r\n        }\r\n        //...\r\n\r\n        // gün kontrolü\r\n        if (startMonth == monthOfYear && startYear == year && startDay > dayOfMonth) {\r\n            isSetEndDate = false\r\n            endStatusLiveData.value =\r\n                \"Bitirme günü Başlama gününden küçük olamaz.\"\r\n            /* Toast.makeText(\r\n                 this@ProjectAddActivity,\r\n                 \"Bitirme günü Başlama gününden küçük olamaz: ${startDay} >= ${dayOfMonth}\",\r\n                 Toast.LENGTH_SHORT\r\n             ).show()*/\r\n\r\n\r\n        }\r\n        if (isSetEndDate != null && isSetEndDate == true) {\r\n            setEndDate(year, monthOfYear, dayOfMonth)\r\n        }\r\n\r\n    }\r\n\r\n    ////\r\n//disposing the disposables\r\n    override fun onCleared() {\r\n        super.onCleared()\r\n        disposables.dispose()\r\n    }\r\n\r\n    val _getProjectFields = MutableLiveData<Project>().apply {\r\n\r\n        //var projectStr: ArrayList<Project> = ArrayList()\r\n        var db: FirebaseFirestore = FirebaseFirestore.getInstance()\r\n        var project: MutableLiveData<Project?> = MutableLiveData()\r\n\r\n        db.collection(\"Project\").get() //.whereEqualTo(\"projectId\", pid)\r\n            .addOnSuccessListener { documents ->\r\n\r\n                if (documents != null) {\r\n\r\n                    var i = 0\r\n                    for (document in documents) {\r\n                        //  projectStr.add(1,pro)\r\n                        value = Project(\r\n                            document.get(\"projectId\") as String,\r\n                            document.get(\"projectName\") as String,\r\n                            document.get(\"projectDetail\") as String?,\r\n                            document.get(\"projectStartDate\") as String?,\r\n                            document.get(\"projectEndDate\") as String?,\r\n                            document.get(\"projectCreateDate\") as String,\r\n                            \"\",\r\n                            document.get(\"techId\") as Long\r\n                        )\r\n\r\n                        i++\r\n                    }\r\n\r\n                }\r\n\r\n            }\r\n    }\r\n\r\n    fun deneme(pid: String): MutableLiveData<Project?> {\r\n        var db: FirebaseFirestore = FirebaseFirestore.getInstance()\r\n        var project: MutableLiveData<Project?> = MutableLiveData()\r\n\r\n        db.collection(\"Project\").whereEqualTo(\"projectId\", pid).get()\r\n            .addOnSuccessListener { documents ->\r\n\r\n                if (documents != null) {\r\n\r\n                    var i = 0\r\n                    for (document in documents) {\r\n                        //  projectStr.add(1,pro)\r\n                        project.value = Project(\r\n                            document.get(\"projectId\") as String,\r\n                            document.get(\"projectName\") as String,\r\n                            document.get(\"projectDetail\") as String?,\r\n                            document.get(\"projectStartDate\") as String?,\r\n                            document.get(\"projectEndDate\") as String?,\r\n                            document.get(\"projectCreateDate\") as String,\r\n                            \"\",\r\n                           document.get(\"techId\") as Long\r\n                        )\r\n\r\n                        i++\r\n                    }\r\n                }\r\n\r\n            }\r\n        return project\r\n    }\r\n\r\n//val projectOne: LiveData<ArrayList<Project>> = _project\r\n\r\n    /*fun _getProjectLogDB(projectId: String) = MutableLiveData<Query?>().apply {\r\n        var options = repository.getProjectLogOptions(projectId)\r\n\r\n        value = options\r\n    }*/\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModel.kt b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModel.kt
+--- a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModel.kt	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/event/ProjectAddViewModel.kt	
+@@ -391,7 +391,7 @@
+         db.collection("Project").get() //.whereEqualTo("projectId", pid)
+             .addOnSuccessListener { documents ->
+ 
+-                if (documents != null) {
++               // if (documents != null) {
+ 
+                     var i = 0
+                     for (document in documents) {
+@@ -404,13 +404,13 @@
+                             document.get("projectEndDate") as String?,
+                             document.get("projectCreateDate") as String,
+                             "",
+-                            document.get("techId") as Long
++                            document.get("techId") as Long?
+                         )
+ 
+                         i++
+                     }
+ 
+-                }
++               // }
+ 
+             }
+     }
+Index: .idea/jarRepositories.xml
+===================================================================
+diff --git a/.idea/jarRepositories.xml b/.idea/jarRepositories.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/jarRepositories.xml	
+@@ -0,0 +1,25 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="RemoteRepositoriesConfiguration">
++    <remote-repository>
++      <option name="id" value="central" />
++      <option name="name" value="Maven Central repository" />
++      <option name="url" value="https://repo1.maven.org/maven2" />
++    </remote-repository>
++    <remote-repository>
++      <option name="id" value="jboss.community" />
++      <option name="name" value="JBoss Community repository" />
++      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
++    </remote-repository>
++    <remote-repository>
++      <option name="id" value="BintrayJCenter" />
++      <option name="name" value="BintrayJCenter" />
++      <option name="url" value="https://jcenter.bintray.com/" />
++    </remote-repository>
++    <remote-repository>
++      <option name="id" value="Google" />
++      <option name="name" value="Google" />
++      <option name="url" value="https://dl.google.com/dl/android/maven2/" />
++    </remote-repository>
++  </component>
++</project>
+\ No newline at end of file
+Index: app/src/main/res/layout/popup_colors.xml
+===================================================================
+diff --git a/app/src/main/res/layout/popup_colors.xml b/app/src/main/res/layout/popup_colors.xml
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/res/layout/popup_colors.xml	
+@@ -0,0 +1,33 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:id="@+id/root_layout"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:orientation="vertical"
++    android:padding="16dp"
++    tools:context=".ui.leftNavigation.project.task.ui.kanban.add.AddCardDivideInfiniteActivity">
++
++    <GridView
++        android:id="@+id/grid_view"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++
++        android:background="#a8b7ae"
++        android:horizontalSpacing="5dp"
++        android:numColumns="3"
++        android:verticalSpacing="5dp"
++        />
++
++    <TextView
++        android:id="@+id/text_view"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_marginTop="20dp"
++        android:background="#ecf8ff"
++        android:padding="15dp"
++        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
++        android:textColor="#3e62c7" />
++
++</LinearLayout>
+\ No newline at end of file
+Index: app/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:dist=\"http://schemas.android.com/apk/distribution\"\r\n    package=\"com.mindfulness.android_pms\">\r\n\r\n    <dist:module dist:instant=\"true\" />\r\n\r\n    <uses-permission android:name=\"android.permission.INTERNET\" />\r\n    <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" />\r\n    <uses-permission android:name=\"android.permission.READ_PHONE_STATE\" />\r\n    <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" />\r\n\r\n    <application\r\n        android:name=\".FirebaseApplication\"\r\n        android:allowBackup=\"true\"\r\n        android:icon=\"@mipmap/ic_launcher\"\r\n        android:label=\"@string/app_name\"\r\n        android:roundIcon=\"@mipmap/ic_launcher_round\"\r\n        android:supportsRtl=\"true\"\r\n        android:theme=\"@style/AppTheme\">\r\n        <activity android:name=\".ui.leftNavigation.project.task.divide_infinite.DivideInfiniteMainActivity\" />\r\n        <activity android:name=\".ui.leftNavigation.project.task.divide_4.DivideMainActivity\" />\r\n        <activity\r\n            android:name=\".ui.leftNavigation.project.task.ui.kanban.add.TaskKanbanAddActivity\"\r\n            android:label=\"\"\r\n            android:parentActivityName=\".ui.main.MainActivity\">\r\n            <meta-data\r\n                android:name=\"android.support.PARENT_ACTIVITY\"\r\n                android:value=\"com.mindfulness.android_pms.ui.leftNavigation.project.task.ui.kanban.TaskManagementActivity\" />\r\n        </activity>\r\n        <activity\r\n            android:name=\".ui.leftNavigation.project.task.ui.kanban.TaskManagementActivity\"\r\n            android:label=\"@string/title_activity_task_management\"\r\n            android:parentActivityName=\".ui.main_menu.MainMenuActivity\">\r\n            <meta-data\r\n                android:name=\"android.support.PARENT_ACTIVITY\"\r\n                android:value=\"com.mindfulness.android_pms.ui.main_menu.MainMenuActivity\" />\r\n        </activity>\r\n        <activity\r\n            android:name=\".ui.leftNavigation.project.event.ProjectAddActivity\"\r\n            android:label=\"\"\r\n            android:parentActivityName=\".ui.main.MainActivity\"\r\n            android:theme=\"@style/AppTheme.NoActionBar\">\r\n            <meta-data\r\n                android:name=\"android.support.PARENT_ACTIVITY\"\r\n                android:value=\"com.mindfulness.android_pms.ui.main.MainActivity\" />\r\n        </activity>\r\n        <activity android:name=\".ui.main_menu.MainMenuActivity\" />\r\n        <activity android:name=\".ui.home.HomeActivity\" />\r\n        <activity android:name=\".ui.auth.SignupActivity\" />\r\n        <activity android:name=\".ui.main.MainActivity\" />\r\n        <activity android:name=\".ui.auth.LoginActivity\">\r\n            <intent-filter>\r\n                <action android:name=\"android.intent.action.MAIN\" />\r\n\r\n                <category android:name=\"android.intent.category.LAUNCHER\" />\r\n            </intent-filter>\r\n        </activity>\r\n    </application>\r\n\r\n</manifest>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+--- a/app/src/main/AndroidManifest.xml	
++++ b/app/src/main/AndroidManifest.xml	
+@@ -18,6 +18,14 @@
+         android:roundIcon="@mipmap/ic_launcher_round"
+         android:supportsRtl="true"
+         android:theme="@style/AppTheme">
++        <activity android:name=".ui.leftNavigation.project.task.ui.kanban.add.AddCardDivideInfiniteActivity"
++            android:parentActivityName=".ui.leftNavigation.project.task.divide_infinite.DivideInfiniteMainActivity"
++            android:theme="@style/AppTheme">
++            <meta-data
++                android:name="android.support.PARENT_ACTIVITY"
++                android:value="com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteMainActivity" />
++
++        </activity>
+         <activity android:name=".ui.leftNavigation.project.task.divide_infinite.DivideInfiniteMainActivity" />
+         <activity android:name=".ui.leftNavigation.project.task.divide_4.DivideMainActivity" />
+         <activity
+@@ -26,10 +34,11 @@
+             android:parentActivityName=".ui.main.MainActivity">
+             <meta-data
+                 android:name="android.support.PARENT_ACTIVITY"
+-                android:value="com.mindfulness.android_pms.ui.leftNavigation.project.task.ui.kanban.TaskManagementActivity" />
++                android:value="com.mindfulness.android_pms.ui.leftNavigation.project.task.kanban.TaskManagementActivity" />
++
+         </activity>
+         <activity
+-            android:name=".ui.leftNavigation.project.task.ui.kanban.TaskManagementActivity"
++            android:name=".ui.leftNavigation.project.task.kanban.TaskManagementActivity"
+             android:label="@string/title_activity_task_management"
+             android:parentActivityName=".ui.main_menu.MainMenuActivity">
+             <meta-data
+@@ -49,7 +58,8 @@
+         <activity android:name=".ui.home.HomeActivity" />
+         <activity android:name=".ui.auth.SignupActivity" />
+         <activity android:name=".ui.main.MainActivity" />
+-        <activity android:name=".ui.auth.LoginActivity">
++        <activity android:name=".ui.auth.LoginActivity"
++            android:exported="true">
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN" />
+ 
+Index: app/src/main/res/layout/rv_task_row.xml
+===================================================================
+diff --git a/app/src/main/res/layout/rv_task_row.xml b/app/src/main/res/layout/rv_task_row.xml
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/res/layout/rv_task_row.xml	
+@@ -0,0 +1,42 @@
++<?xml version="1.0" encoding="utf-8"?>
++<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:card_view="http://schemas.android.com/apk/res-auto"
++    android:orientation="vertical"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++
++    android:id="@+id/card_viewTaskList"
++    android:layout_margin="5dp"
++    card_view:cardCornerRadius="12dp"
++    card_view:cardElevation="4dp"
++    android:outlineAmbientShadowColor="@color/common_google_signin_btn_text_light"
++    card_view:contentPadding="4dp">
++
++    <RelativeLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:padding="@dimen/activity_horizontal_margin">
++
++        <TextView
++            android:id="@+id/rv_task_name_text"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:paddingLeft="15dp"
++            android:layout_marginRight="30dp"
++            android:paddingTop="5dp"
++            android:text="TextView"
++            android:textSize="20sp" />
++
++        <TextView
++            android:id="@+id/textViewOptions"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_alignParentTop="true"
++            android:layout_alignParentRight="true"
++            android:paddingLeft="@dimen/activity_horizontal_margin"
++            android:paddingRight="@dimen/activity_horizontal_margin"
++            android:text="&#8942;"
++            android:textAppearance="?android:textAppearanceLarge" />
++
++    </RelativeLayout>
++</androidx.cardview.widget.CardView>
+\ No newline at end of file
+Index: app/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>apply plugin: 'com.android.application'\r\n\r\napply plugin: 'kotlin-android'\r\n\r\napply plugin: 'kotlin-android-extensions'\r\n\r\napply plugin: 'com.google.gms.google-services'\r\n\r\n//apply plugin: 'kotlin-kapt'\r\n\r\nandroid {\r\n    compileSdkVersion 29\r\n    buildToolsVersion \"29.0.2\"\r\n    defaultConfig {\r\n        applicationId \"com.mindfulness.android_pms\"\r\n        minSdkVersion 19\r\n        targetSdkVersion 29\r\n        versionCode 1\r\n        versionName \"1.0\"\r\n        testInstrumentationRunner \"androidx.test.runner.AndroidJUnitRunner\"\r\n        multiDexEnabled true\r\n    }\r\n    buildTypes {\r\n        release {\r\n            minifyEnabled false\r\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'\r\n        }\r\n    }\r\n    dataBinding { enabled = true }\r\n    kotlinOptions {\r\n        jvmTarget = \"1.8\"\r\n    }\r\n}\r\n\r\ndependencies {\r\n    implementation fileTree(dir: 'libs', include: ['*.jar'])\r\n    implementation \"org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version\"\r\n    implementation 'androidx.appcompat:appcompat:1.1.0'\r\n    implementation 'androidx.core:core-ktx:1.2.0'\r\n    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'\r\n    // add the Firebase SDK for Google Analytics\r\n    implementation 'com.google.firebase:firebase-analytics:17.2.3'\r\n    implementation 'com.google.firebase:firebase-auth:19.2.0'\r\n    implementation 'com.google.android.gms:play-services-auth:17.0.0'\r\n    implementation 'com.google.firebase:firebase-firestore:21.4.1'\r\n\r\n\r\n    implementation 'androidx.legacy:legacy-support-v4:1.0.0'\r\n    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0'\r\n    implementation 'androidx.recyclerview:recyclerview:1.1.0'\r\n    testImplementation 'junit:junit:4.13'\r\n    androidTestImplementation 'androidx.test:runner:1.2.0'\r\n    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'\r\n\r\n    // ViewModel and LiveData\r\n    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'\r\n\r\n    //New Material Design\r\n    implementation 'com.google.android.material:material:1.2.0-alpha05'\r\n\r\n    //Kodein Dependency Injection\r\n    implementation \"org.kodein.di:kodein-di-generic-jvm:6.2.1\"\r\n    implementation \"org.kodein.di:kodein-di-framework-android-x:6.2.1\"\r\n\r\n    //Android Navigation Architecture\r\n    implementation 'androidx.navigation:navigation-fragment-ktx:2.3.0-alpha03'\r\n    implementation 'androidx.navigation:navigation-ui-ktx:2.3.0-alpha03'\r\n\r\n    //RxJava\r\n    implementation \"io.reactivex.rxjava2:rxjava:2.2.5\"\r\n    implementation \"io.reactivex.rxjava2:rxandroid:2.1.0\"\r\n\r\n    implementation 'com.android.support:multidex:1.0.3'\r\n\r\n    //implementation 'com.tbuonomo:morph-bottom-navigation:1.0.1'\r\n    implementation 'com.firebaseui:firebase-ui-firestore:4.1.0'\r\n\r\n    implementation 'com.ernestoyaquello.dragdropswiperecyclerview:drag-drop-swipe-recyclerview:0.5.1'\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle b/app/build.gradle
+--- a/app/build.gradle	
++++ b/app/build.gradle	
+@@ -9,14 +9,14 @@
+ //apply plugin: 'kotlin-kapt'
+ 
+ android {
+-    compileSdkVersion 29
++    compileSdkVersion 31
+     buildToolsVersion "29.0.2"
+     defaultConfig {
+         applicationId "com.mindfulness.android_pms"
+         minSdkVersion 19
+-        targetSdkVersion 29
++        targetSdkVersion 31
+         versionCode 1
+-        versionName "1.0"
++        versionName "1.2"
+         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+         multiDexEnabled true
+     }
+@@ -35,36 +35,36 @@
+ dependencies {
+     implementation fileTree(dir: 'libs', include: ['*.jar'])
+     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+-    implementation 'androidx.appcompat:appcompat:1.1.0'
+-    implementation 'androidx.core:core-ktx:1.2.0'
+-    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
++    implementation 'androidx.appcompat:appcompat:1.4.0'
++    implementation 'androidx.core:core-ktx:1.7.0'
++    implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
+     // add the Firebase SDK for Google Analytics
+-    implementation 'com.google.firebase:firebase-analytics:17.2.3'
+-    implementation 'com.google.firebase:firebase-auth:19.2.0'
+-    implementation 'com.google.android.gms:play-services-auth:17.0.0'
+-    implementation 'com.google.firebase:firebase-firestore:21.4.1'
++    implementation 'com.google.firebase:firebase-analytics:20.0.1'
++    implementation 'com.google.firebase:firebase-auth:21.0.1'
++    implementation 'com.google.android.gms:play-services-auth:20.0.0'
++    implementation 'com.google.firebase:firebase-firestore:24.0.0'
+ 
+ 
+     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0'
+-    implementation 'androidx.recyclerview:recyclerview:1.1.0'
++    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0'
++    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+     testImplementation 'junit:junit:4.13'
+-    androidTestImplementation 'androidx.test:runner:1.2.0'
+-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
++    androidTestImplementation 'androidx.test:runner:1.4.0'
++    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+ 
+     // ViewModel and LiveData
+     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+ 
+     //New Material Design
+-    implementation 'com.google.android.material:material:1.2.0-alpha05'
++    implementation 'com.google.android.material:material:1.6.0-alpha01'
+ 
+     //Kodein Dependency Injection
+     implementation "org.kodein.di:kodein-di-generic-jvm:6.2.1"
+     implementation "org.kodein.di:kodein-di-framework-android-x:6.2.1"
+ 
+     //Android Navigation Architecture
+-    implementation 'androidx.navigation:navigation-fragment-ktx:2.3.0-alpha03'
+-    implementation 'androidx.navigation:navigation-ui-ktx:2.3.0-alpha03'
++    implementation 'androidx.navigation:navigation-fragment-ktx:2.4.0-beta02'
++    implementation 'androidx.navigation:navigation-ui-ktx:2.4.0-beta02'
+ 
+     //RxJava
+     implementation "io.reactivex.rxjava2:rxjava:2.2.5"
+@@ -76,4 +76,6 @@
+     implementation 'com.firebaseui:firebase-ui-firestore:4.1.0'
+ 
+     implementation 'com.ernestoyaquello.dragdropswiperecyclerview:drag-drop-swipe-recyclerview:0.5.1'
++
++    implementation 'com.andrewjapar.rangedatepicker:rangedatepicker:0.2.4'
+ }
+Index: app/src/main/res/layout-v28/activity_tab.xml
+===================================================================
+diff --git a/app/src/main/res/layout-v28/activity_tab.xml b/app/src/main/res/layout-v28/activity_tab.xml
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/res/layout-v28/activity_tab.xml	
+@@ -0,0 +1,46 @@
++<?xml version="1.0" encoding="utf-8"?>
++<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    tools:context=".ui.leftNavigation.project.task.divide_infinite.tabController.TabActivity"
++
++    >
++
++    <!--   <android.support.design.widget.AppBarLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:theme="@style/AppTheme.AppBarOverlay">
++-->
++        <TextView
++            android:id="@+id/title"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:gravity="center"
++            android:minHeight="?actionBarSize"
++            android:padding="@dimen/appbar_padding"
++            android:text="@string/app_name"
++            android:textAppearance="@style/TextAppearance.Widget.AppCompat.Toolbar.Title" />
++
++        <android.support.design.widget.TabLayout
++            android:id="@+id/tabs"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:background="?attr/colorPrimary" />
++   <!-- </android.support.design.widget.AppBarLayout> -->
++
++    <android.support.v4.view.ViewPager
++        android:id="@+id/view_pager"
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
++
++    <android.support.design.widget.FloatingActionButton
++        android:id="@+id/fab"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="bottom|end"
++        android:layout_margin="@dimen/fab_margin"
++        app:srcCompat="@android:drawable/ic_dialog_email" />
++</android.support.design.widget.CoordinatorLayout>
+\ No newline at end of file
+Index: .idea/compiler.xml
+===================================================================
+diff --git a/.idea/compiler.xml b/.idea/compiler.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/compiler.xml	
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="CompilerConfiguration">
++    <bytecodeTargetLevel target="11" />
++  </component>
++</project>
+\ No newline at end of file
+Index: app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/ui/kanban/add/AddCardDivideInfiniteActivity.kt
+===================================================================
+diff --git a/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/ui/kanban/add/AddCardDivideInfiniteActivity.kt b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/ui/kanban/add/AddCardDivideInfiniteActivity.kt
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/java/com/mindfulness/android_pms/ui/leftNavigation/project/task/ui/kanban/add/AddCardDivideInfiniteActivity.kt	
+@@ -0,0 +1,221 @@
++package com.mindfulness.android_pms.ui.leftNavigation.project.task.ui.kanban.add
++
++//import android.annotation.SuppressLint
++import android.annotation.SuppressLint
++import android.app.AlertDialog
++import android.content.Intent
++import android.graphics.Color
++import android.os.Bundle
++import android.view.Menu
++import android.view.MenuItem
++import android.view.View
++import android.widget.*
++import androidx.appcompat.app.AppCompatActivity
++import androidx.appcompat.widget.Toolbar
++import androidx.databinding.DataBindingUtil
++import androidx.lifecycle.Observer
++import androidx.lifecycle.ViewModelProviders
++import com.mindfulness.android_pms.R
++import com.mindfulness.android_pms.databinding.ActivityAddCardDivideInfiniteBinding
++import com.mindfulness.android_pms.ui.auth.AuthListener
++import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteViewModel
++import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinite.DivideInfiniteViewModelFactory
++import kotlinx.android.synthetic.main.activity_add_card_divide_infinite.*
++import kotlinx.android.synthetic.main.popup_colors.*
++import kotlinx.android.synthetic.main.popup_colors.view.*
++import org.kodein.di.KodeinAware
++import org.kodein.di.android.kodein
++import org.kodein.di.generic.instance
++
++
++class AddCardDivideInfiniteActivity : AppCompatActivity(), KodeinAware, AuthListener {
++
++    override val kodein by kodein()
++    private val factory: DivideInfiniteViewModelFactory by instance()
++
++    private lateinit var viewModel: DivideInfiniteViewModel
++    var pid: String? = null
++    var cid: String? = null
++    // var et_cardTitle:EditText? = null
++    //  var et_cardDetal: EditText? = null
++  //  var grid_view:GridView? = null
++   // var text_view:TextView? = null
++
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        // setContentView(R.layout.activity_add_card_divide_infinite)
++
++        val binding: ActivityAddCardDivideInfiniteBinding =
++            DataBindingUtil.setContentView(this, R.layout.activity_add_card_divide_infinite)
++        viewModel = ViewModelProviders.of(this, factory).get(DivideInfiniteViewModel::class.java)
++        binding.viewmodel = viewModel
++
++        viewModel.authListener = this
++
++        //actionbar
++        val actionbar = findViewById<Toolbar>(R.id.toolbar2) //supportActionBar
++        setSupportActionBar(actionbar)
++        //set actionbar title
++        title = "New Card"
++        //actionbar!!.title = "New Activity"
++        //set back button
++        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
++        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
++
++        // et_cardTitle = findViewById(R.id.et_cardTitle)
++        // et_cardDetal = findViewById(R.id.et_cardDetal)
++
++       //  grid_view = findViewById<GridView>(R.id.grid_view)
++      //   text_view = findViewById<TextView>(R.id.text_view)
++        val intent1: Intent = intent
++        cid = intent1.getStringExtra("cid")
++       // pid = intent1.getStringExtra("pid")
++
++        if(!cid.isNullOrEmpty()){
++            viewModel.getExistCard(cid!!).observe(this, Observer {card->
++                if(card != null){
++                    title = card.cardTitle
++                    et_cardTitle.setText(card.cardTitle)
++                    et_cardDetal.setText(card.cardDetail)
++                }
++            })
++        }
++
++    }
++
++    override fun onSupportNavigateUp(): Boolean {
++        onBackPressed()
++        return true
++    }
++
++    override fun onCreateOptionsMenu(menu: Menu): Boolean {
++        // Inflate the menu; this adds items to the action bar if it is present.
++        menuInflater.inflate(R.menu.add_button, menu)
++        return true
++    }
++
++    override fun onOptionsItemSelected(item: MenuItem): Boolean {
++        // Handle action bar item clicks here.
++        val id = item.getItemId()
++
++        if (id == R.id.action_one) {
++
++            //  et_cardTitle = findViewById(R.id.et_cardTitle)
++            // et_cardDetal = findViewById(R.id.et_cardDetal)
++            /*   var cardClass = TaskDivideCard(
++                   "0",
++                   "0",
++                   "111",
++                   et_cardTitle.toString(),
++                   et_cardTitle.toString(),
++                   0
++               )*/
++            val intent1: Intent = intent
++            cid = intent1.getStringExtra("cid")
++            pid = intent1.getStringExtra("pid")
++            if (pid == null) {
++                println("pid is empty." + pid)
++                Toast.makeText(this, "Project not found! Try again pls", Toast.LENGTH_LONG).show()
++            } else {
++                try {
++                    viewModel.insertCardClick(cid, pid!!)
++                } catch (ex: Exception) {
++                    Toast.makeText(this, ex.message, Toast.LENGTH_LONG).show()
++                }
++
++            }
++
++           // Toast.makeText(this, "Item One Clicked", Toast.LENGTH_LONG).show()
++            return true
++        }
++        if (id == R.id.action_two) {
++            Toast.makeText(this, "Item Two Clicked", Toast.LENGTH_LONG).show()
++            return true
++        }
++        if (id == R.id.action_three) {
++            Toast.makeText(this, "Item Three Clicked", Toast.LENGTH_LONG).show()
++            return true
++        }
++
++        return super.onOptionsItemSelected(item)
++
++    }
++
++    override fun onStarted() {
++        Toast.makeText(
++            this@AddCardDivideInfiniteActivity,
++            "Kayıt İşlemi Başladı.",
++            Toast.LENGTH_LONG
++        ).show()
++    }
++
++    override fun onSuccess() {
++        Toast.makeText(this@AddCardDivideInfiniteActivity, "Başarılı!", Toast.LENGTH_LONG).show()
++        //  startMainMenuActivity()
++        finish()
++        //super.onBackPressed();
++    }
++
++    override fun onFailure(message: String) {
++        Toast.makeText(this@AddCardDivideInfiniteActivity, message, Toast.LENGTH_LONG).show()
++    }
++
++   // @SuppressLint("WrongViewCast")
++    fun chooseCardColor(view: View) {
++
++
++        // Initialize a list of string values
++        val colors = listOf<String>("Red","Green","Yellow","Blue","Orange","Pink","White","Gray")
++
++       val colorsCode = listOf<String>("#5c2b29","#345920","#F4D03F","#5499C7","#EB984E","#F1948A","#FDFEFE","#E5E8E8")
++
++       // Initialize a new array adapter instance
++        val adapter = ArrayAdapter(
++            this, // Context
++            android.R.layout.simple_list_item_1, // Layout
++            colors // List
++        )
++
++        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
++        // builder.setMessage("Are you sure?").setPositiveButton("Yes", dialogClickListener)
++        //   .setNegativeButton("No", dialogClickListener).show()
++
++        val inflater = layoutInflater
++        builder.setTitle("Choose Card Color")
++        val dialogLayout = inflater.inflate(R.layout.popup_colors, null)
++        builder.setView(dialogLayout)
++        builder.setPositiveButton("OK") { dialogInterface, i ->
++            Toast.makeText(
++                applicationContext,
++                "EditText is " + "tılşandı",
++                Toast.LENGTH_SHORT
++            ).show()
++        }
++        builder.show()
++
++       // Set the grid view adapter/data source
++      // grid_view.let {
++       dialogLayout.grid_view.adapter = adapter
++
++           // Set an item click listener for grid view items
++       dialogLayout.grid_view.onItemClickListener = object : AdapterView.OnItemClickListener {
++               @SuppressLint("ResourceAsColor")
++               override fun onItemClick(parent: AdapterView<*>, view: View, position: Int, id: Long) {
++                   // Get the GridView selected/clicked item text
++                   val selectedItem = parent.getItemAtPosition(position).toString()
++
++                   // Display the selected/clicked item text and position on TextView
++                   dialogLayout.text_view!!.text =
++                       "GridView item clicked : $selectedItem \nAt index position : $position"
++                   dialogLayout.text_view.setBackgroundColor(Color.parseColor(colorsCode.get(position)))
++
++               }
++           }
++
++           //  }
++      // }
++
++
++   }
++
++}
+Index: app/src/androidTest/java/com/mindfulness/android_pms/ExampleInstrumentedTest.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mindfulness.android_pms\r\n\r\nimport androidx.test.platform.app.InstrumentationRegistry\r\nimport androidx.test.ext.junit.runners.AndroidJUnit4\r\n\r\nimport org.junit.Test\r\nimport org.junit.runner.RunWith\r\n\r\nimport org.junit.Assert.*\r\n\r\n/**\r\n * Instrumented test, which will execute on an Android device.\r\n *\r\n * See [testing documentation](http://d.android.com/tools/testing).\r\n */\r\n@RunWith(AndroidJUnit4::class)\r\nclass ExampleInstrumentedTest {\r\n    @Test\r\n    fun useAppContext() {\r\n        // Context of the app under test.\r\n        val appContext = InstrumentationRegistry.getInstrumentation().targetContext\r\n        assertEquals(\"com.mindfulness.android_pms\", appContext.packageName)\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/mindfulness/android_pms/ExampleInstrumentedTest.kt b/app/src/androidTest/java/com/mindfulness/android_pms/ExampleInstrumentedTest.kt
+--- a/app/src/androidTest/java/com/mindfulness/android_pms/ExampleInstrumentedTest.kt	
++++ b/app/src/androidTest/java/com/mindfulness/android_pms/ExampleInstrumentedTest.kt	
+@@ -1,7 +1,8 @@
+ package com.mindfulness.android_pms
+ 
+ import androidx.test.platform.app.InstrumentationRegistry
+-import androidx.test.ext.junit.runners.AndroidJUnit4
++//import androidx.test.ext.junit.runners.AndroidJUnit4
++import androidx.test.runner.AndroidJUnit4
+ 
+ import org.junit.Test
+ import org.junit.runner.RunWith
