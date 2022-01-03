@@ -24,7 +24,7 @@ import com.mindfulness.android_pms.ui.leftNavigation.project.task.divide_infinit
 import com.mindfulness.android_pms.ui.leftNavigation.project.task.kanban.TaskManagementActivity
 
 @Suppress("DEPRECATION")
-class TaskListFragment(val projectId:String) : Fragment() {
+class TaskListFragment(val projectId: String) : Fragment() {
 
     companion object {
         fun newInstance(projectId: String) = TaskListFragment(projectId = projectId)
@@ -62,7 +62,7 @@ class TaskListFragment(val projectId:String) : Fragment() {
 
     private fun getDataFromFirestore(rv_project: RecyclerView) {
 
-        var query = taskDoc/*.orderBy(
+        val query = taskDoc/*.orderBy(
             "projectCreateDate",
             Query.Direction.DESCENDING
         ).whereEqualTo("createUserId", firebaseAuth.uid)
@@ -82,12 +82,11 @@ class TaskListFragment(val projectId:String) : Fragment() {
                 val task = documentSnapshot.toObject(Task::class.java)
                 val id = documentSnapshot.id
                 //val techId = task?.techId.let { project?.techId.toString().toInt() } //documentSnapshot.get("techId").toString().toInt() //as? Int ?: -1
-                Toast.makeText(
+                /*Toast.makeText(
                     context,
                     "id: $id",
                     Toast.LENGTH_LONG
-                ).show()
-
+                ).show()*/
 
                 /*Intent(activity, TaskManagementActivity::class.java).also { itt ->
                     //MainMenuActivity
@@ -96,9 +95,6 @@ class TaskListFragment(val projectId:String) : Fragment() {
                     itt.putExtra("pname", project!!.projectName)
                     startActivity(itt)
                 }*/
-
-
-
             }
         })
     }
@@ -113,7 +109,5 @@ class TaskListFragment(val projectId:String) : Fragment() {
         if (adapter != null)
             adapter!!.stopListening()
     }
-
-
 
 }

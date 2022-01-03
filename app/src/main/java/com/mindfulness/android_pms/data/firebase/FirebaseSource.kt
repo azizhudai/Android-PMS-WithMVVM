@@ -7,17 +7,23 @@ import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.mindfulness.android_pms.data.pojo.Project
+import com.mindfulness.android_pms.data.pojo.Task
 import com.mindfulness.android_pms.data.pojo.TaskDivideCard
+import com.mindfulness.android_pms.data.pojo.TaskKanban
 import io.reactivex.Completable
 import java.util.*
 
+fun aaa(){
+
+}
+
 class FirebaseSource {
     var projectStr: ArrayList<String> = ArrayList()
-    private val firebaseAuth: FirebaseAuth by lazy {
+    val firebaseAuth: FirebaseAuth by lazy {
         FirebaseAuth.getInstance()
     }
 
-    private val db: FirebaseFirestore by lazy {
+    val db: FirebaseFirestore by lazy {
         FirebaseFirestore.getInstance()
     }
 
@@ -93,7 +99,7 @@ class FirebaseSource {
             db.collection("Project")
         //val refProjectLog = db.collection("ProjectLog")
         var refProjectDoc: DocumentReference
-        if (project.projectId.isNullOrEmpty()) {
+        if (project.projectId.isEmpty()) {
             refProjectDoc = refProject.document()
             myId = refProjectDoc.id
         } else {
@@ -102,8 +108,8 @@ class FirebaseSource {
         }
 
         /*var firebaseAuth = FirebaseAuth.getInstance()*/
-        var uid = firebaseAuth.uid
-        var project__ = Project(
+        val uid = firebaseAuth.uid
+        val project__ = Project(
             myId,
             project.projectName,
             project.projectDetail,
@@ -120,6 +126,41 @@ class FirebaseSource {
                 emitter.onComplete()
         }.addOnFailureListener { exception ->
             emitter.onError(exception)
+        }
+    }
+
+    fun addKanbanTask(task: TaskKanban) = Completable.create { emitter ->
+        val myId: String
+        val refTaskKanban =
+            db.collection("TaskKanban")
+
+        val refDoc: DocumentReference
+        if (task.taskId.isEmpty()) {
+            refDoc = refTaskKanban.document()
+            myId = refDoc.id
+        } else {
+            refDoc = refTaskKanban.document(task.taskId)
+            myId = task.taskId
+        }
+
+        val uid = firebaseAuth.uid
+        val task_ = TaskKanban(
+            myId,
+            task.projectId,
+            task.taskTitle,
+            task.taskDetail,
+            task.taskStarDate,
+            task.taskEndDate,
+            task.taskCreateDate,
+            task.taskCreateUserId,
+            task.taskStatus
+        )
+
+        refDoc.set(task_).addOnCompleteListener { task ->
+            if (task.isCanceled && task.isSuccessful)
+                emitter.onComplete()
+        }.addOnFailureListener { ex ->
+            emitter.onError(ex)
         }
     }
 

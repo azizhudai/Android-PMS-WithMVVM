@@ -211,7 +211,7 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         // Handle action bar item clicks here.
-        val id = item.getItemId()
+        val id = item.itemId
 
         if (id == R.id.action_one) {
 

@@ -5,26 +5,37 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".ui.leftNavigation.project.task.ui.kanban.fragments.doing.DoingFragment">
-    <LinearLayout
+
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="480dp"
+        android:layout_margin="16dp">
 
-        android:id="@+id/rv_doing" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_doing"
+            android:layout_width="match_parent"
 
-    <TextView
-        android:id="@+id/btn_add_doing_task"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="@string/task_kanban_create"
-        android:textAllCaps="false"
-        android:textColor="#FF9800"
-        android:textSize="20sp"
-        android:textStyle="bold|italic" />
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:onClick="addKanbanTask"
+            android:id="@+id/btn_add_doing_task"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:text="@string/task_kanban_create"
+            android:textAllCaps="false"
+            android:textColor="#FF9800"
+            android:textSize="20sp"
+            android:textStyle="bold|italic"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/rv_doing" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
 </FrameLayout>

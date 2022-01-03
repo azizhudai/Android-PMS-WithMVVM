@@ -122,7 +122,6 @@ class AddCardDivideInfiniteActivity : AppCompatActivity(), KodeinAware, AuthList
                 } catch (ex: Exception) {
                     Toast.makeText(this, ex.message, Toast.LENGTH_LONG).show()
                 }
-
             }
 
            // Toast.makeText(this, "Item One Clicked", Toast.LENGTH_LONG).show()
