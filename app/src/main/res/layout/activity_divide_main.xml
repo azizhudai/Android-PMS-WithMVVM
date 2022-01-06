@@ -12,7 +12,10 @@
         android:layout_height="wrap_content"
 
         android:background="#FFB74D"
-        android:theme="@style/AppTheme.AppBarOverlay">
+        android:theme="@style/AppTheme.AppBarOverlay"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:id="@+id/tv_page_title"
@@ -28,11 +31,14 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/cardView2"
         android:layout_width="150dp"
         android:layout_height="150dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="80dp"
         app:cardBackgroundColor="#D5FADA"
-        tools:layout_editor_absoluteX="26dp"
-        tools:layout_editor_absoluteY="140dp">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/appBarLayout2">
 
         <TextView
             android:id="@+id/textView"
@@ -47,9 +53,13 @@
     <androidx.cardview.widget.CardView
         android:layout_width="150dp"
         android:layout_height="150dp"
+        android:layout_marginTop="44dp"
+        android:layout_marginEnd="32dp"
         app:cardBackgroundColor="#FFEFE7"
-        tools:layout_editor_absoluteX="228dp"
-        tools:layout_editor_absoluteY="335dp" >
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardView"
+        app:layout_constraintVertical_bias="0.403">
 
         <TextView
             android:id="@+id/textView4"
@@ -62,11 +72,17 @@
     </androidx.cardview.widget.CardView>
 
     <androidx.cardview.widget.CardView
+
+        android:id="@+id/cardView3"
         android:layout_width="150dp"
         android:layout_height="150dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="44dp"
         app:cardBackgroundColor="#FBE9E7"
-        tools:layout_editor_absoluteX="26dp"
-        tools:layout_editor_absoluteY="335dp">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardView2"
+        app:layout_constraintVertical_bias="0.403">
 
         <TextView
             android:id="@+id/textView3"
@@ -79,11 +95,14 @@
     </androidx.cardview.widget.CardView>
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/cardView"
         android:layout_width="150dp"
         android:layout_height="150dp"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="32dp"
         app:cardBackgroundColor="#E0F2F1"
-        tools:layout_editor_absoluteX="228dp"
-        tools:layout_editor_absoluteY="141dp" >
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/appBarLayout2">
 
         <TextView
             android:id="@+id/textView2"

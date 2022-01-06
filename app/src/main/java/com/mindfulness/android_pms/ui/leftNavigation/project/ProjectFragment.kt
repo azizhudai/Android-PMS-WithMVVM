@@ -38,7 +38,7 @@ class ProjectFragment : Fragment() {
 
     //private lateinit var db: FirebaseFirestore
     //private val projectNameArray: ArrayList<String> = ArrayList()
-    var adapter: ProjectRecyclerAdapter? = null
+    private lateinit var adapter: ProjectRecyclerAdapter
     ///var projectList: MutableList<Project?> = ArrayList()
 
     override fun onCreateView(
@@ -56,7 +56,8 @@ class ProjectFragment : Fragment() {
         //rv_project.itemAnimator = object :FaceDetector.Fa
         getDataFromFirestore(rv_project)
 
-        adapter!!.editClickStatus.observe(viewLifecycleOwner, Observer {
+        if(this::adapter.isInitialized)
+        adapter.editClickStatus.observe(viewLifecycleOwner, Observer {
             if (it.get("statu") == true) {
                 Log.e("ddd", "deneme " + it.get("pid"))
                 Intent(activity, ProjectAddActivity::class.java).also { itt ->
@@ -68,7 +69,8 @@ class ProjectFragment : Fragment() {
             }
         })
 
-        adapter!!.deleteClickStatus.observe(viewLifecycleOwner, Observer {
+        if(this::adapter.isInitialized)
+        adapter.deleteClickStatus.observe(viewLifecycleOwner, Observer {
             if (it.get("statu") == true) {
 
                 val builder = AlertDialog.Builder(activity)
@@ -84,7 +86,7 @@ class ProjectFragment : Fragment() {
                     //Toast.makeText(activity, "clicked yes", Toast.LENGTH_LONG).show()
 
                     var position = it.get("position") as Int
-                    adapter!!.deleteItem(position)
+                    adapter.deleteItem(position)
                     /*var db: FirebaseFirestore = FirebaseFirestore.getInstance()
                     db.collection("Project").document(it.get("pid") as String)
                         .delete()
@@ -124,31 +126,33 @@ class ProjectFragment : Fragment() {
 
     private fun getDataFromFirestore(rv_project: RecyclerView) {
 
-        var query = projectDoc.orderBy(
+        val query = projectDoc.orderBy(
             "projectCreateDate",
             Query.Direction.DESCENDING
         ).whereEqualTo("createUserId", firebaseAuth.uid)
 
-        var options =
+        val options =
             FirestoreRecyclerOptions.Builder<Project>().setQuery(query, Project::class.java).build()
         adapter = ProjectRecyclerAdapter(options = options, mCtx = context!!)
 
         rv_project.setHasFixedSize(true)
-        var layoutManager = LinearLayoutManager(context!!.applicationContext)
+        val layoutManager = LinearLayoutManager(context!!.applicationContext)
         rv_project.layoutManager = layoutManager
+        rv_project.itemAnimator = null
         rv_project.adapter = adapter
 
-        adapter!!.setOnItemClickListener(object : OnItemClickListener {
+        if(this::adapter.isInitialized)
+        adapter.setOnItemClickListener(object : OnItemClickListener {
             override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
 
                 val project = documentSnapshot.toObject(Project::class.java)
                 val id = documentSnapshot.id
                 val techId = project?.techId.let { project?.techId.toString().toInt() } //documentSnapshot.get("techId").toString().toInt() //as? Int ?: -1
-                Toast.makeText(
+               /* Toast.makeText(
                     context,
                     "id: $id"+"type: $techId",
                     Toast.LENGTH_LONG
-                ).show()
+                ).show()*/
 
                 when (techId) {
                     0 -> {
@@ -202,13 +206,14 @@ class ProjectFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
-        adapter!!.startListening()
+        if(this::adapter.isInitialized)
+        adapter.startListening()
     }
 
     override fun onStop() {
         super.onStop()
-        if (adapter != null)
-            adapter!!.stopListening()
+        if(this::adapter.isInitialized)
+            adapter.stopListening()
     }
 
     /*override fun onResume() {
@@ -252,19 +257,19 @@ class ProjectFragment : Fragment() {
 
                 //performing positive action
                 builder.setPositiveButton("Yes") { dialogInterface, which ->
-                    adapter!!.deleteItem(position)
+                    adapter.deleteItem(position)
                 }
                 //performing cancel action
                 builder.setNeutralButton("Cancel") { _, _ ->
-                    adapter!!.notifyItemRemoved(position)
-                    adapter!!.notifyItemInserted(position)
+                    adapter.notifyItemRemoved(position)
+                    adapter.notifyItemInserted(position)
                 }
                 //performing negative action
                 builder.setNegativeButton("No") { _, _ ->
-                    adapter!!.notifyItemRemoved(position)
+                    adapter.notifyItemRemoved(position)
                     /* mListItems.add(mRecentlyDeletedItemPosition,
                          mRecentlyDeletedItem);*/
-                    adapter!!.notifyItemInserted(position)
+                    adapter.notifyItemInserted(position)
                 }
                 // Create the AlertDialog
                 val alertDialog: AlertDialog = builder.create()

@@ -46,7 +46,7 @@ class DoneFragment : Fragment() {
     var db: FirebaseFirestore = FirebaseFirestore.getInstance()
     var projectDoc = db.collection("TaskKanban")
     var firebaseAuth = FirebaseAuth.getInstance()
-    var adapterTaskKanban: TaskKanbanRecyclerAdapter? = null
+    private lateinit var adapterTaskKanban: TaskKanbanRecyclerAdapter
     var root: View? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -84,19 +84,21 @@ class DoneFragment : Fragment() {
         rvTaskDone.setHasFixedSize(true)
         var layoutManager = LinearLayoutManager(context!!.applicationContext)
         rvTaskDone.layoutManager = layoutManager
+        rvTaskDone.itemAnimator = null
         rvTaskDone.adapter = adapterTaskKanban
 
-        adapterTaskKanban!!.setOnItemClickListener(object :
+        if(this::adapterTaskKanban.isInitialized)
+        adapterTaskKanban.setOnItemClickListener(object :
             TaskKanbanRecyclerAdapter.OnItemClickListener {
             override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
 
                 var task = documentSnapshot.toObject(TaskKanban::class.java)
                 var id = documentSnapshot.id
-                Toast.makeText(
+               /* Toast.makeText(
                     context,
                     "id: $id",
                     Toast.LENGTH_LONG
-                ).show()
+                ).show()*/
                 Intent(activity, TaskManagementActivity::class.java).also { itt ->
                     //MainMenuActivity
                     //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -138,7 +140,7 @@ class DoneFragment : Fragment() {
                 if (swipeDir == 4) {
                     //sola sürüklendi status 1 olacak
                     // rvDone.setBackgroundColor(Color.BLUE)
-                    adapterTaskKanban!!.changeStatus("2", position)
+                    adapterTaskKanban.changeStatus("2", position)
                 }
 
             }
@@ -151,12 +153,13 @@ class DoneFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
-        adapterTaskKanban!!.startListening()
+        if(this::adapterTaskKanban.isInitialized)
+        adapterTaskKanban.startListening()
     }
 
     override fun onStop() {
         super.onStop()
-        if (adapterTaskKanban != null)
-            adapterTaskKanban!!.stopListening()
+        if(this::adapterTaskKanban.isInitialized)
+            adapterTaskKanban.stopListening()
     }
 }

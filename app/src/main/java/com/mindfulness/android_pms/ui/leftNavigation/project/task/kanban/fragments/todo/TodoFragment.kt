@@ -24,7 +24,7 @@ class TodoFragment : Fragment() {
 
     var db: FirebaseFirestore = FirebaseFirestore.getInstance()
     var projectDoc = db.collection("TaskKanban")
-    var adapterTaskKanban: TaskKanbanRecyclerAdapter? = null
+    private lateinit var adapterTaskKanban: TaskKanbanRecyclerAdapter
     var root: View? = null
 
     private lateinit var viewModelTodo: TodoViewModel
@@ -62,27 +62,29 @@ class TodoFragment : Fragment() {
         query = query.whereEqualTo("taskStatus", "1")
 
         //var queryy = viewModelDoing.query(projectId!!).value
-        var options =
+        val options =
             FirestoreRecyclerOptions.Builder<TaskKanban>().setQuery(query, TaskKanban::class.java)
                 .build()
         adapterTaskKanban = TaskKanbanRecyclerAdapter(options = options, mCtx = context!!)
 
         rvTaskDoing.setHasFixedSize(true)
-        var layoutManager = LinearLayoutManager(context!!.applicationContext)
+        val layoutManager = LinearLayoutManager(context!!.applicationContext)
         rvTaskDoing.layoutManager = layoutManager
+        rvTaskDoing.itemAnimator = null
         rvTaskDoing.adapter = adapterTaskKanban
 
-        adapterTaskKanban!!.setOnItemClickListener(object :
+        if (this::adapterTaskKanban.isInitialized)
+        adapterTaskKanban.setOnItemClickListener(object :
             TaskKanbanRecyclerAdapter.OnItemClickListener {
             override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
 
                 //var task = documentSnapshot.toObject(TaskKanban::class.java)
-                var id = documentSnapshot.id
-                Toast.makeText(
+                val id = documentSnapshot.id
+               /* Toast.makeText(
                     context,
                     "id: $id",
                     Toast.LENGTH_LONG
-                ).show()
+                ).show()*/
                 Intent(activity, TaskManagementActivity::class.java).also { itt ->
                     //MainMenuActivity
                     //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -171,13 +173,14 @@ class TodoFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
-        adapterTaskKanban!!.startListening()
+        if (this::adapterTaskKanban.isInitialized)
+        adapterTaskKanban.startListening()
     }
 
     override fun onStop() {
         super.onStop()
-        if (adapterTaskKanban != null)
-            adapterTaskKanban!!.stopListening()
+        if (this::adapterTaskKanban.isInitialized)
+            adapterTaskKanban.stopListening()
     }
 
 

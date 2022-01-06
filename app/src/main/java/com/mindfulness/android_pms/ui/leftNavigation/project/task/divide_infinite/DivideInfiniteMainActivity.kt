@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.Toast
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.isNotEmpty
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -33,11 +34,11 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
     AdapterView.OnItemSelectedListener {
 
     override val kodein by kodein()
-    private val factory:DivideInfiniteViewModelFactory by instance()
-    private lateinit var viewModel:DivideInfiniteViewModel
-    private var adapter: DivideInfiniteRecyclerAdapter? = null
+    private val factory: DivideInfiniteViewModelFactory by instance()
+    private lateinit var viewModel: DivideInfiniteViewModel
+    private lateinit var adapter: DivideInfiniteRecyclerAdapter
 
-    var rv_divide_invite: RecyclerView? = null
+    lateinit var rv_divide_invite: RecyclerView
 
     var pid: String? = null
 
@@ -60,18 +61,20 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
         pid = intent1.getStringExtra("pid")
         pid?.let {
             val pName = intent1.getStringExtra("pname")
-          //  val pageTitle = findViewById<TextView>(R.id.tv_page_title)
-           // pageTitle.text = pName
+            //  val pageTitle = findViewById<TextView>(R.id.tv_page_title)
+            // pageTitle.text = pName
             title = pName
-          //  actionbar!!.title = pName
+            //  actionbar!!.title = pName
             // Creating the new Fragment with the name passed in.
             //val fragment = DoingFragment.newInstance(pid!!)
-            getDataDBTaskDivide(rv_divide_invite!!, pid!!)
+            if (rv_divide_invite.isNotEmpty())
+                getDataDBTaskDivide(rv_divide_invite, pid!!)
         }
         supportActionBar!!.setDisplayHomeAsUpEnabled(true);
         supportActionBar!!.setDisplayShowHomeEnabled(true);
 
-        adapter!!.editClickStatus.observe(this, Observer {
+        if(this::adapter.isInitialized)
+        adapter.editClickStatus.observe(this, Observer {
             if (it.get("statu") == true) {
                 Intent(this, AddCardDivideInfiniteActivity::class.java).also { itt ->
                     //MainMenuActivity
@@ -83,14 +86,15 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
             }
         })
 
-        adapter!!.deleteClickStatus.observe(this, Observer {
+        if(this::adapter.isInitialized)
+        adapter.deleteClickStatus.observe(this, Observer {
             if (it.get("statu") == true) {
 
                 val builder = AlertDialog.Builder(this)
                 //set title for alert dialog
                 builder.setTitle(R.string.dialogTitle)
                 //set message for alert dialog
-                var message = it.get("cname") as String
+                val message = it.get("cname") as String
                 builder.setMessage(message)
                 builder.setIcon(android.R.drawable.ic_dialog_alert)
 
@@ -98,8 +102,8 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
                 builder.setPositiveButton("Yes") { dialogInterface, which ->
                     //Toast.makeText(activity, "clicked yes", Toast.LENGTH_LONG).show()
 
-                    var position = it.get("position") as Int
-                    adapter!!.deleteItem(position)
+                    val position = it.get("position") as Int
+                    adapter.deleteItem(position)
 
                 }
                 //performing cancel action
@@ -118,28 +122,31 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
         })
 
 
-
     }
+
     override fun onStart() {
         super.onStart()
-        if (adapter != null)
-            adapter!!.startListening()
+        if(this::adapter.isInitialized)
+            adapter.startListening()
     }
+
     override fun onStarted() {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-       /* super.onStart()
-        if (adapter != null)
-            adapter!!.startListening()*/
+        /* super.onStart()
+         if (adapter != null)
+             adapter!!.startListening()*/
     }
+
     override fun onResume() {
         super.onResume()
-        if (adapter != null)
-            adapter!!.startListening()
+        if(this::adapter.isInitialized)
+            adapter.startListening()
     }
+
     override fun onStop() {
         super.onStop()
-        if (adapter != null)
-            adapter!!.stopListening()
+        if(this::adapter.isInitialized)
+            adapter.stopListening()
     }
 
     override fun onSuccess() {
@@ -158,28 +165,39 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    private fun getDataDBTaskDivide(rv_divide_invite:RecyclerView,projectId:String){
+    private fun getDataDBTaskDivide(rv_divide_invite: RecyclerView, projectId: String) {
 
         //var query = viewModelDivideInf.taskDivideCard
-      //  var db = FirebaseFirestore.getInstance()
-    //    var projectLogDoc = db.collection("TaskDivideCard")
-       /* var query = projectLogDoc.whereEqualTo(
-            "projectId",
-            projectId
-        )*/
+        //  var db = FirebaseFirestore.getInstance()
+        //    var projectLogDoc = db.collection("TaskDivideCard")
+        /* var query = projectLogDoc.whereEqualTo(
+             "projectId",
+             projectId
+         )*/
         val aa = viewModel.taskCardList(projectId).value //viewModel.taskDivideCard.value
-        val options = FirestoreRecyclerOptions.Builder<TaskDivideCard>().setQuery(aa!!, TaskDivideCard::class.java)
+        val options = FirestoreRecyclerOptions.Builder<TaskDivideCard>()
+            .setQuery(aa!!, TaskDivideCard::class.java)
             .build()
-        adapter = DivideInfiniteRecyclerAdapter(options = options,mCtx = this@DivideInfiniteMainActivity.applicationContext)
+        adapter = DivideInfiniteRecyclerAdapter(
+            options = options,
+            mCtx = this@DivideInfiniteMainActivity.applicationContext
+        )
         rv_divide_invite.setHasFixedSize(true)
 
-        val layoutManager = LinearLayoutManager(this@DivideInfiniteMainActivity.applicationContext,LinearLayoutManager.HORIZONTAL,false)
+        val layoutManager = LinearLayoutManager(
+            this@DivideInfiniteMainActivity.applicationContext,
+            LinearLayoutManager.HORIZONTAL,
+            false
+        )
         rv_divide_invite.layoutManager = layoutManager
+        rv_divide_invite.itemAnimator = null
         rv_divide_invite.adapter = adapter
 
-        adapter!!.setOnItemClickListener(object : DivideInfiniteRecyclerAdapter.OnItemClickListener{
+        if(this::adapter.isInitialized)
+        adapter.setOnItemClickListener(object :
+            DivideInfiniteRecyclerAdapter.OnItemClickListener {
             override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
-               // TODO("Not yet implemented")
+                // TODO("Not yet implemented")
                 val id = documentSnapshot.id
                 /*Toast.makeText(
                     this@DivideInfiniteMainActivity.applicationContext,
@@ -192,6 +210,7 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
 
         })
     }
+
     fun changeFragment(fragment: Fragment) {
         val fragmentTransaction = supportFragmentManager.beginTransaction()
         fragmentTransaction.replace(R.id.frameLayout, fragment)
@@ -215,7 +234,10 @@ class DivideInfiniteMainActivity : AppCompatActivity(), AuthListener, KodeinAwar
 
         if (id == R.id.action_one) {
 
-            Intent(this@DivideInfiniteMainActivity, AddCardDivideInfiniteActivity::class.java).also { itt ->
+            Intent(
+                this@DivideInfiniteMainActivity,
+                AddCardDivideInfiniteActivity::class.java
+            ).also { itt ->
                 //MainMenuActivity
                 //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 itt.putExtra("pid", pid as String)

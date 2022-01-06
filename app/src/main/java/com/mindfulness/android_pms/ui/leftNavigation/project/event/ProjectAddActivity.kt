@@ -9,6 +9,8 @@ import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isEmpty
+import androidx.core.view.isNotEmpty
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.Observer
@@ -48,7 +50,7 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware,
 
     var pid: String? = null
 
-    var rv_projectLog2: RecyclerView? = null
+    lateinit var rv_projectLog2: RecyclerView
     var adapter: ProjectLogRecyclerAdapter? = null
     var selectedTech = 0
 
@@ -87,7 +89,9 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware,
         if (!pid.isNullOrEmpty()) {
 
             sp_tech.visibility = View.GONE
-            getDataFromFiretoreProjectLog(rv_projectLog2!!, pid!!)
+            if(rv_projectLog2.isNotEmpty()) {
+                getDataFromFiretoreProjectLog(rv_projectLog2, pid!!)
+            }
 
             viewModel.deneme(pid!!).observe(this, Observer { project ->
                 if (project != null) {
@@ -292,6 +296,7 @@ class ProjectAddActivity : AppCompatActivity(), AuthListener, KodeinAware,
         rv_projectLog.setHasFixedSize(true)
         val layoutManager = LinearLayoutManager(this@ProjectAddActivity.applicationContext)
         rv_projectLog.layoutManager = layoutManager
+        rv_projectLog.itemAnimator = null
         rv_projectLog.adapter = adapter
         // }
 

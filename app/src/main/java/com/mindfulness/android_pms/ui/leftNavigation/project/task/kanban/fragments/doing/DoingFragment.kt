@@ -25,8 +25,9 @@ class DoingFragment : Fragment() {
     //private lateinit var viewModelTask: DoneViewModel
     var db: FirebaseFirestore = FirebaseFirestore.getInstance()
     var projectDoc = db.collection("TaskKanban")
+
     // var firebaseAuth = FirebaseAuth.getInstance()
-    var adapterTaskKanban: TaskKanbanRecyclerAdapter? = null
+    private lateinit var adapterTaskKanban: TaskKanbanRecyclerAdapter
     var root: View? = null
 
     private lateinit var viewModelDoing: DoingViewModel
@@ -72,28 +73,30 @@ class DoingFragment : Fragment() {
         rvTaskDoing.setHasFixedSize(true)
         var layoutManager = LinearLayoutManager(context!!.applicationContext)
         rvTaskDoing.layoutManager = layoutManager
+        rvTaskDoing.itemAnimator = null
         rvTaskDoing.adapter = adapterTaskKanban
 
-        adapterTaskKanban!!.setOnItemClickListener(object :
-            TaskKanbanRecyclerAdapter.OnItemClickListener {
-            override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
+        if (this::adapterTaskKanban.isInitialized)
+            adapterTaskKanban.setOnItemClickListener(object :
+                TaskKanbanRecyclerAdapter.OnItemClickListener {
+                override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
 
-                //var task = documentSnapshot.toObject(TaskKanban::class.java)
-                var id = documentSnapshot.id
-                Toast.makeText(
-                    context,
-                    "id: $id",
-                    Toast.LENGTH_LONG
-                ).show()
-                Intent(activity, TaskKanbanAddActivity::class.java).also { itt ->
-                    //MainMenuActivity
-                    //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    itt.putExtra("tid", id)
-                    //itt.putExtra("tname", task!!.taskTitle)
-                    startActivity(itt)
+                    //var task = documentSnapshot.toObject(TaskKanban::class.java)
+                    val id = documentSnapshot.id
+                    /*  Toast.makeText(
+                          context,
+                          "id: $id",
+                          Toast.LENGTH_LONG
+                      ).show()*/
+                    Intent(activity, TaskKanbanAddActivity::class.java).also { itt ->
+                        //MainMenuActivity
+                        //it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        itt.putExtra("tid", id)
+                        //itt.putExtra("tname", task!!.taskTitle)
+                        startActivity(itt)
+                    }
                 }
-            }
-        })
+            })
     }
 
     private fun setRecyclerViewItemTouchListener(rvDone: RecyclerView) {
@@ -146,12 +149,12 @@ class DoingFragment : Fragment() {
                 if (swipeDir == 4) {
                     //sola sürüklendi status 1 olacak
                     // rvDone.setBackgroundColor(Color.BLUE)
-                    adapterTaskKanban!!.changeStatus("1", position)
+                    adapterTaskKanban.changeStatus("1", position)
                 }
                 if (swipeDir == 8) {
                     //sağ sürüklendi status 3 olacak
                     //rvDone.setBackgroundColor(Color.GREEN)
-                    adapterTaskKanban!!.changeStatus("3", position)
+                    adapterTaskKanban.changeStatus("3", position)
                 }
             }
 
@@ -178,12 +181,13 @@ class DoingFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
-        adapterTaskKanban!!.startListening()
+        if (this::adapterTaskKanban.isInitialized)
+            adapterTaskKanban.startListening()
     }
 
     override fun onStop() {
         super.onStop()
-        if (adapterTaskKanban != null)
+        if (this::adapterTaskKanban.isInitialized)
             adapterTaskKanban!!.stopListening()
     }
 

@@ -31,7 +31,7 @@ class TaskListFragment(val projectId: String) : Fragment() {
     }
 
     private lateinit var viewModel: TaskListViewModel
-    var adapter: TaskRecyclerAdapter? = null
+    private lateinit var adapter: TaskRecyclerAdapter
     var db: FirebaseFirestore = FirebaseFirestore.getInstance()
     var taskDoc = db.collection("Task")
 
@@ -74,9 +74,11 @@ class TaskListFragment(val projectId: String) : Fragment() {
         rv_project.setHasFixedSize(true)
         var layoutManager = LinearLayoutManager(context!!.applicationContext)
         rv_project.layoutManager = layoutManager
+        rv_project.itemAnimator = null
         rv_project.adapter = adapter
 
-        adapter!!.setOnItemClickListener(object : TaskRecyclerAdapter.OnItemClickListener {
+        if(this::adapter.isInitialized)
+        adapter.setOnItemClickListener(object : TaskRecyclerAdapter.OnItemClickListener {
             override fun onItemClick(documentSnapshot: DocumentSnapshot, position: Int) {
 
                 val task = documentSnapshot.toObject(Task::class.java)
@@ -101,13 +103,14 @@ class TaskListFragment(val projectId: String) : Fragment() {
 
     override fun onStart() {
         super.onStart()
-        adapter!!.startListening()
+        if(this::adapter.isInitialized)
+        adapter.startListening()
     }
 
     override fun onStop() {
         super.onStop()
-        if (adapter != null)
-            adapter!!.stopListening()
+        if(this::adapter.isInitialized)
+            adapter.stopListening()
     }
 
 }

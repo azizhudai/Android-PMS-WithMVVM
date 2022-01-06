@@ -7,6 +7,7 @@
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout-v28/fragment_tab.xml" value="0.20885416666666667" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/activity_add_card_divide_infinite.xml" value="0.20885416666666667" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/activity_divide_infinite_main.xml" value="0.20885416666666667" />
+        <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/activity_divide_main.xml" value="0.33" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/activity_main.xml" value="0.22" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/activity_main_menu.xml" value="0.25" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/activity_project_add.xml" value="0.21354166666666666" />
@@ -16,6 +17,7 @@
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/content_divide_infinite.xml" value="0.1" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/doing_fragment.xml" value="0.371875" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/nav_header_main.xml" value="0.5" />
+        <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/rv_project_row.xml" value="0.20052083333333334" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/task_list_fragment.xml" value="0.209375" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/layout/todo_fragment.xml" value="0.371875" />
         <entry key="..\:/projeler/apps/android-pms/app/src/main/res/menu/activity_main_drawer.xml" value="0.21354166666666666" />
